@@ -134,9 +134,23 @@ h2.section-title span { color:var(--green); }
    HERO
 ═══════════════════════════ */
 #hero {
-  min-height:100vh;
+  /* MOBILE-FIRST: let the hero grow with its content. Using min-height:100vh
+     here combined with `align-items:center` + `overflow:hidden` (as we do on
+     desktop) causes the flex algorithm to centre content vertically inside a
+     fixed 100vh box — on phones the badge + big <h1> + paragraph + buttons +
+     stats add up to MORE than 100vh, so the excess spills equally above and
+     below, and `overflow:hidden` clips the bottom edge. The last children
+     (the .stat-l labels: Products / Customers / Farm Community) get sliced
+     off, and the white .strip section directly below the hero butts up
+     against the cut line, giving the impression of a curved white shape
+     covering the labels. The desktop @media block below restores the
+     original 100vh + centered layout for ≥769px viewports where content
+     comfortably fits. */
+  min-height:auto;
   background:linear-gradient(148deg,var(--green-deep) 0%,var(--green-mid) 45%,#1a7a40 72%,var(--teal) 100%);
-  display:flex; align-items:center; position:relative; overflow:hidden; padding-top:80px;
+  display:flex; align-items:flex-start; position:relative; overflow:hidden;
+  padding-top:80px;
+  padding-bottom:clamp(2rem, 6vw, 3rem);
 }
 #hero::before {
   content:''; position:absolute;
@@ -165,6 +179,30 @@ h2.section-title span { color:var(--green); }
 .badge-dot { width:7px; height:7px; border-radius:50%; background:#6ee7a0; animation:pulse 2s infinite; }
 @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.45;transform:scale(1.25)} }
 
+/* Export highlight — sibling badge to signal we ship farm products
+   for bulk / international enquiries. Distinct amber tint so it
+   stands apart from the primary green "delivering in your city" chip. */
+.hero-badge--export {
+  margin-top:.55rem;
+  background:linear-gradient(135deg, rgba(255,247,224,.95), rgba(255,236,196,.95));
+  border-color:rgba(245,158,11,.55);
+  color:#8a5a00;
+  animation:fdU .6s .05s ease both;
+}
+.hero-badge--export i { color:var(--amber); font-size:.9rem; }
+
+/* Export CTA in hero-btns — ghost button with amber accent */
+.btn-export {
+  border-color:rgba(255,236,196,.85);
+  color:#fff8e6;
+}
+.btn-export i { color:#ffd580; }
+.btn-export:hover,
+.btn-export:focus-visible {
+  background:rgba(255,247,224,.14);
+  border-color:#ffd580;
+}
+
 h1.hero-h1 {
   font-size:clamp(2.5rem,5.5vw,3.9rem); font-weight:900; color:var(--white);
   line-height:1.08; letter-spacing:-.04em; margin-bottom:1.2rem;
@@ -175,6 +213,29 @@ h1.hero-h1 .hl {
   -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
 }
 .hero-sub { font-size:1.08rem; color:rgba(255,255,255,.72); line-height:1.72; margin-bottom:2rem; animation:fdU .7s .2s ease both; }
+.hero-sub--export {
+  display:inline-flex;
+  align-items:flex-start;
+  gap:.55rem;
+  padding:.6rem 1rem;
+  background:rgba(255, 236, 196, .12);
+  border:1px solid rgba(255, 213, 128, .45);
+  border-radius:14px;
+  color:#fff8e6;
+  font-size:.95rem;
+  line-height:1.5;
+  text-align:left;
+  margin-top:-.6rem;
+  margin-bottom:2rem;
+  max-width:100%;
+}
+.hero-sub--export i {
+  color:#ffd580;
+  font-size:1rem;
+  margin-top:.22rem;   /* nudge icon to align with first line of text */
+  flex-shrink:0;
+}
+.hero-sub--export strong { color:#fff; font-weight:700; }
 .hero-contact-link {
   color:var(--white);
   text-decoration:underline;
@@ -189,26 +250,62 @@ h1.hero-h1 .hl {
 .hero-btns { display:flex; gap:.9rem; flex-wrap:wrap; justify-content:center; margin-bottom:2.5rem; animation:fdU .7s .3s ease both; }
 .hero-btns .btn { padding:.9rem 1.85rem; font-size:1rem; }
 
-.hero-stats { display:flex; gap:2.2rem; justify-content:center; flex-wrap:wrap; animation:fdU .7s .4s ease both; }
-.stat-n { font-size:1.65rem; font-weight:900; color:var(--white); line-height:1; }
-.stat-l { font-size:.75rem; color:rgba(255,255,255,.55); margin-top:.2rem; }
+.hero-stats {
+  display:flex; flex-wrap:wrap;
+  gap:clamp(1rem, 4vw, 2.2rem);
+  justify-content:center;
+  padding:.25rem 0 .1rem;
+  animation:fdU .7s .4s ease both;
+}
+/* Each stat is its own vertical flex unit so the number and label are always
+   glued together and the label can never wrap under a neighbouring number. */
+.hero-stats > div {
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+  min-width:5rem;
+  padding:.2rem .3rem;
+}
+.stat-n {
+  display:block;
+  font-size:clamp(1.5rem, 5vw, 1.75rem);
+  font-weight:900; color:var(--white); line-height:1;
+}
+.stat-l {
+  display:block;
+  font-size:clamp(.78rem, 2.6vw, .85rem);
+  font-weight:500;
+  color:rgba(255,255,255,.85);
+  margin-top:.5rem;
+  letter-spacing:.02em;
+  text-align:center;
+  /* Allow "Farm Community" to break to a second line on very narrow screens
+     rather than forcing horizontal overflow, per requirement 8. */
+  white-space:normal;
+  word-break:normal;
+  overflow-wrap:break-word;
+  max-width:9rem;
+}
 
-/* Right visual (hidden on mobile, shown ≥769px) */
-.hero-vis { display:none; position:relative; animation:fdR .8s .2s ease both; }
+/* Right visual — shown on all screens (compact on mobile, full card on ≥769px) */
+.hero-vis { display:block; position:relative; animation:fdR .8s .2s ease both; margin-top:2rem; }
 .hero-card-wrap {
   background:rgba(255,255,255,.1); backdrop-filter:blur(18px);
-  border:1px solid rgba(255,255,255,.18); border-radius:var(--r-xl); padding:1.8rem;
+  border:1px solid rgba(255,255,255,.18); border-radius:var(--r-xl); padding:1rem;
 }
-.hc-main { background:var(--white); border-radius:var(--r-lg); overflow:hidden; box-shadow:var(--sh-lg); margin-bottom:.9rem; }
+.hc-main { background:var(--white); border-radius:var(--r-lg); overflow:hidden; box-shadow:var(--sh-lg); margin-bottom:.9rem; position:relative; min-height:300px; }
 .hc-img  { height:230px; background:linear-gradient(135deg,#e8f5e9,#a5d6a7); display:flex; align-items:center; justify-content:center; font-size:5.5rem; overflow:hidden; }
 .hc-img img { width:100%; height:100%; object-fit:cover; display:block; }
 .hc-body { padding:1.1rem 1.3rem; }
+/* Sachet variant: image fills entire card; body overlays bottom with a soft white gradient */
+.hc-img.hc-img-sachet { position:absolute; top:0; right:0; bottom:0; left:0; height:auto; background:#fff; display:block; padding:0; }
+/* Mobile default: full sachet visible (contain), no price overlay */
+.hc-img.hc-img-sachet img { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; display:block; }
+.hc-img.hc-img-sachet + .hc-body { display:none; }
 .hc-cat  { display:inline-block; background:#e8f5e9; color:var(--green-dark); font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; padding:.22rem .55rem; border-radius:4px; margin-bottom:.4rem; }
 .hc-name { font-weight:700; color:var(--dark); margin-bottom:.2rem; }
 .hc-price{ color:var(--green); font-weight:900; font-size:1.1rem; }
-.hc-foot { display:flex; justify-content:space-between; align-items:center; font-size:.8rem; }
-.hc-foot span { color:rgba(255,255,255,.7); }
-.hc-foot a    { color:#6ee7a0; font-weight:700; }
+.hc-foot { display:flex; justify-content:space-between; align-items:center; font-size:.85rem; padding:0 .25rem; gap:.5rem; }
+.hc-foot span { color:rgba(255,255,255,.95); }
+.hc-foot a    { color:#6ee7a0; font-weight:800; text-decoration:underline; text-underline-offset:3px; }
 
 /* Float chips */
 .chip {
@@ -219,7 +316,7 @@ h1.hero-h1 .hl {
 }
 .chip-em { font-size:1.15rem; }
 .chip-sub{ font-size:.7rem; color:var(--muted); font-weight:400; margin-top:.05rem; }
-.chip-2 { bottom:44px; left:-28px; animation:flt 4s 1.5s ease-in-out infinite; }
+.chip-2 { top:12px; right:12px; animation:flt 4s 1.5s ease-in-out infinite; }
 @keyframes flt { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
 
 /* Particles */
@@ -254,6 +351,41 @@ h1.hero-h1 .hl {
   .strip-item:hover .fa-truck-fast { animation:none; }
   .strip-item:hover .strip-ico { transform:none; box-shadow:none; }
 }
+
+/* Soft "we're building" disclaimer above the product grid */
+.prod-note {
+  width: 100%;
+  margin: 1rem 0 0;
+  display: flex;
+  align-items: flex-start;
+  gap: .75rem;
+  padding: .85rem 1rem;
+  background: var(--green-light);
+  border: 1px solid #b7dfbc;
+  border-left: 4px solid var(--green);
+  border-radius: var(--r-md);
+  color: #12341c;
+}
+.prod-note i {
+  color: var(--green-dark);
+  font-size: 1rem;
+  margin-top: .15rem;
+  flex-shrink: 0;
+}
+.prod-note p {
+  margin: 0;
+  font-size: .88rem;
+  line-height: 1.6;
+}
+.prod-note strong { color: var(--green-dark); }
+.prod-note a {
+  color: var(--green-dark);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prod-note a:hover,
+.prod-note a:focus-visible { color: var(--green); }
 
 /* ══════════════════════════
    PRODUCTS — mobile-first compact tile (Direction B).
@@ -341,6 +473,68 @@ h1.hero-h1 .hl {
 }
 .btn-add--ok { background:linear-gradient(135deg,var(--green-dark),#13795f) !important; }
 
+/* ─────────────────────────────────────────────────────────────
+   Inline quantity selector — the Add button transforms into a
+   horizontal [− N +] counter once the item enters the cart, and
+   reverts back to the Add button when qty drops to zero.
+   Both states share the same gradient / rounded look so the swap
+   feels like a morph rather than a replacement.
+   ───────────────────────────────────────────────────────────── */
+.qty-slot { display:flex; align-items:center; justify-content:flex-end; flex-shrink:0; }
+.qty-inline {
+  display:inline-flex; align-items:center; gap:.15rem;
+  padding:.22rem;
+  border-radius:12px;
+  background:linear-gradient(135deg,var(--green),var(--teal));
+  box-shadow:0 2px 8px rgba(40,167,69,.28);
+  min-height:44px;                 /* touch-friendly overall height */
+  animation:qtyPop .22s cubic-bezier(.4,0,.2,1);
+}
+.qi-btn {
+  min-width:40px; width:40px; height:40px;
+  border:none; border-radius:9px; cursor:pointer;
+  /* Buttons are layered on top of .qty-inline's green→teal gradient — that
+     gradient (not this button) is what provides contrast against the white
+     glyph, so keep the default background transparent. A translucent wash is
+     applied on hover/active for tactile feedback. */
+  background:transparent; color:#fff;
+  font-size:1.15rem; font-weight:800; line-height:1;
+  display:flex; align-items:center; justify-content:center;
+  padding:0;
+  font-family:inherit;
+  transition:background var(--ease), transform var(--ease);
+  -webkit-tap-highlight-color:transparent;
+}
+.qi-btn:hover  { background:rgba(255,255,255,.22); }
+.qi-btn:active { background:rgba(255,255,255,.30); transform:scale(.9); }
+.qi-btn:focus-visible {
+  outline:2px solid rgba(255,255,255,.85);
+  outline-offset:2px;
+}
+.qi-num {
+  min-width:1.75rem;
+  padding:0 .1rem;
+  color:#fff; font-size:.95rem; font-weight:800;
+  text-align:center; line-height:1;
+  font-variant-numeric:tabular-nums;
+  user-select:none;
+}
+
+@keyframes qtyPop {
+  from { transform:scale(.85); opacity:.35; }
+  to   { transform:none;       opacity:1;   }
+}
+@media (prefers-reduced-motion: reduce) {
+  .qty-inline { animation:none; }
+}
+
+/* Very narrow phones — trim the counter but keep tap targets above the
+   ~40px comfort threshold. Reducing button width, not height. */
+@media (max-width: 380px) {
+  .qi-btn { min-width:36px; width:36px; }
+  .qi-num { min-width:1.5rem; font-size:.9rem; }
+}
+
 /* Desktop-only hover — never fires on touch, prevents sticky :hover on tap */
 @media (hover: hover) {
   .pcard:hover        { transform:translateY(-7px); box-shadow:var(--sh-lg); border-color:#b2dfdb; }
@@ -360,21 +554,21 @@ h1.hero-h1 .hl {
 #about { background:var(--white); }
 .about-grid { display:grid; grid-template-columns:1fr; gap:2rem; align-items:center; }
 
-.about-vis { display:none; position:relative; }
+.about-vis { display:block; position:relative; margin-bottom:2rem; }
 .about-img {
-  border-radius:var(--r-xl); height:470px;
-  background:linear-gradient(145deg,#e8f5e9,#81c784,#4caf50);
+  border-radius:var(--r-xl); height:280px;
+  background:#ffffff;
   display:flex; align-items:center; justify-content:center; font-size:8rem;
   overflow:hidden; position:relative;
 }
-.about-img img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; border-radius:var(--r-xl); }
+.about-img img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; display:block; border-radius:var(--r-xl); }
 .afc {
   position:absolute; background:var(--white); border-radius:var(--r-md);
-  padding:1rem 1.35rem; box-shadow:var(--sh-lg);
-  display:flex; align-items:center; gap:.8rem;
+  padding:.7rem .9rem; box-shadow:var(--sh-lg);
+  display:none; align-items:center; gap:.6rem;
 }
-.afc-1 { bottom:-22px; left:-28px; }
-.afc-2 { top: 28px;  right:-28px; }
+.afc-1 { bottom:12px; left:12px; }
+.afc-2 { top:12px;    right:12px; }
 .afc-n { font-size:1.55rem; font-weight:900; color:var(--green); line-height:1; }
 .afc-l { font-size:.76rem; color:var(--muted); }
 
@@ -558,13 +752,22 @@ footer { background:var(--dark); color:rgba(255,255,255,.55); }
 }
 .cart-overlay.o { opacity:1; pointer-events:all; }
 .cart-drawer {
-  position:fixed; top:0; right:0; bottom:0; width:min(420px,100vw);
+  position:fixed; top:0; right:0; bottom:auto; width:min(420px,100vw);
   background:var(--white); z-index:1101; display:flex; flex-direction:column;
   transform:translateX(100%); transition:transform .32s cubic-bezier(.4,0,.2,1);
   box-shadow:-8px 0 32px rgba(0,0,0,.12);
   visibility:hidden;
+  /* --vvh is set by JS from window.visualViewport.height when the on-screen
+     keyboard opens; falls back to 100dvh (and 100vh for older engines).
+     bottom is intentionally 'auto' so the explicit height wins — with both
+     top and bottom set, position:fixed ignores the height property and the
+     drawer would extend under the on-screen keyboard. */
+  height:100vh;
   height:100dvh;
+  height:var(--vvh, 100dvh);
+  max-height:100vh;
   max-height:100dvh;
+  max-height:var(--vvh, 100dvh);
   overflow:hidden;
 }
 .cart-drawer.o { transform:none; visibility:visible; }
@@ -740,10 +943,29 @@ footer { background:var(--dark); color:rgba(255,255,255,.55); }
   .hb            { display:none; }
 
   /* Hero */
+  /* Restore the original desktop hero: full-viewport height with content
+     vertically centred. Mobile keeps min-height:auto to prevent the flex
+     centering + overflow:hidden combo from clipping the .stat-l labels. */
+  #hero          { min-height:100vh; align-items:center; padding-bottom:0; }
   .hero-grid     { grid-template-columns:1fr 1fr; gap:3rem; text-align:left; }
   .hero-btns     { justify-content:flex-start; }
   .hero-stats    { justify-content:flex-start; }
-  .hero-vis      { display:block; }
+  .hero-stats > div { align-items:flex-start; }
+  .stat-l        { text-align:left; }
+  .hero-vis      { margin-top:0; }
+  .hero-card-wrap{ padding:1.8rem; }
+  .hc-main       { min-height:380px; }
+  .hc-img.hc-img-sachet img { object-fit:cover; }
+  .hc-img.hc-img-sachet + .hc-body {
+    display:block;
+    position:absolute; left:0; right:0; bottom:0;
+    padding:1.1rem 1.3rem; padding-top:2.4rem;
+    background:linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.85) 45%, rgba(255,255,255,.97) 100%);
+  }
+  .hc-foot       { font-size:.8rem; padding:0; }
+  .hc-foot span  { color:rgba(255,255,255,.7); }
+  .hc-foot a     { font-weight:700; text-decoration:none; }
+  .chip-2        { top:auto; right:auto; bottom:44px; left:-28px; }
 
   /* Features strip */
   .strip-row     { flex-direction:row; }
@@ -754,7 +976,11 @@ footer { background:var(--dark); color:rgba(255,255,255,.55); }
 
   /* About */
   .about-grid    { grid-template-columns:1fr 1fr; gap:4rem; }
-  .about-vis     { display:block; }
+  .about-vis     { margin-bottom:0; }
+  .about-img     { height:470px; }
+  .afc           { display:flex; padding:1rem 1.35rem; gap:.8rem; }
+  .afc-1         { bottom:-24px; left:-40px; }
+  .afc-2         { top:-24px;    right:-40px; }
 
   /* Testimonials */
   .rev-grid      { grid-template-columns:repeat(3,1fr); }
@@ -810,6 +1036,93 @@ footer { background:var(--dark); color:rgba(255,255,255,.55); }
 .wa-ico-md       { font-size: 1.2rem; }
 .cart-title-ico  { margin-right: .45rem; color: var(--green); }
 .is-hidden       { display: none !important; }
+
+/* ─────────────────────────────────────────────────────────────
+   Legal pages — Privacy Policy (#privacy) and Terms of Service
+   (#terms). Rendered as long-form prose sections inside the
+   existing single-page layout. Content is legally-focused so we
+   emphasise readability over the marketing style used elsewhere.
+   ───────────────────────────────────────────────────────────── */
+.legal              { background: var(--white); }
+.legal--alt         { background: var(--bg); }   /* alternating band so Privacy/Terms feel distinct */
+
+.legal-hd           { text-align: center; margin-bottom: 2.5rem; max-width: 720px; margin-left:auto; margin-right:auto; }
+.legal-hd .section-desc { margin-left:auto; margin-right:auto; }
+
+.legal-body         { max-width: 780px; margin: 0 auto; color: var(--text); }
+
+.legal-tldr {
+  background: var(--green-light);
+  border: 1px solid #b7dfbc;
+  border-left: 4px solid var(--green);
+  color: #12341c;
+  border-radius: var(--r-md);
+  padding: 1rem 1.15rem;
+  font-size: .92rem;
+  line-height: 1.65;
+  margin-bottom: 2rem;
+}
+.legal-tldr strong  { color: var(--green-dark); }
+.legal-tldr em      { font-style: italic; }
+
+.legal-block        { margin-bottom: 1.85rem; }
+.legal-block h3 {
+  font-size: 1.05rem; font-weight: 800;
+  color: var(--dark); letter-spacing: -.01em;
+  margin-bottom: .6rem;
+  scroll-margin-top: 96px;   /* stop the fixed nav from covering the anchor */
+}
+.legal-block p,
+.legal-block ul     { font-size: .93rem; line-height: 1.72; color: var(--text); }
+.legal-block p + p  { margin-top: .6rem; }
+.legal-block ul     { list-style: disc; padding-left: 1.35rem; margin-top: .35rem; }
+.legal-block ul li  { margin-bottom: .35rem; }
+.legal-block ul li::marker { color: var(--green); }
+.legal-block strong { color: var(--dark); }
+.legal-block code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .84em;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: .05em .35em;
+  color: var(--green-dark);
+}
+
+/* Placeholder marker — visually distinct so you can see at a glance
+   exactly which strings need to be replaced before going live. */
+.legal-fill {
+  font-style: normal;
+  background: #fff4d1;
+  color: #7a4b00;
+  border: 1px dashed #d9a13a;
+  border-radius: 4px;
+  padding: .02em .35em;
+  font-size: .88em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Seller-info row above .footer-bot — CPA 2020 conspicuous-display requirement. */
+.seller-info {
+  display: flex; flex-wrap: wrap; gap: .4rem 1.4rem;
+  padding: 1rem 0;
+  border-top: 1px solid rgba(255,255,255,.07);
+  font-size: .78rem;
+  color: rgba(255,255,255,.55);
+  line-height: 1.55;
+}
+.seller-info strong { color: rgba(255,255,255,.85); font-weight: 700; margin-right: .25rem; }
+.seller-info .legal-fill {
+  /* On the dark footer we drop the amber background (Sonar can't reason about
+     rgba layered on dark parents and false-flags a contrast issue). We keep
+     just the dashed amber border so the "placeholder \u2014 replace me" cue is
+     still obvious, and lift the text one shade above the surrounding grey so
+     the marker still catches the eye against var(--dark). */
+  background: transparent;
+  color: rgba(255, 220, 130, .95);
+  border-color: rgba(255, 220, 130, .75);
+}
 
 /* ─────────────────────────────────────────────────────────────
    Delivery-details form inside the cart drawer
@@ -950,7 +1263,12 @@ footer { background:var(--dark); color:rgba(255,255,255,.55); }
     min-height:0;
     overflow-y:auto;
     overscroll-behavior:contain;
-    padding-bottom:calc(.35rem + env(safe-area-inset-bottom));
+    /* --kb-h is populated by JS with the on-screen keyboard's overlap height
+       (window.innerHeight − visualViewport.height). Reserving that much extra
+       bottom padding lets the user scroll the focused field ABOVE the
+       keyboard instead of it being trapped underneath. */
+    padding-bottom:calc(.35rem + env(safe-area-inset-bottom) + var(--kb-h, 0px));
+    scroll-padding-bottom:calc(1rem + var(--kb-h, 0px));
   }
 
   .deliv-fields {
@@ -970,3 +1288,110 @@ footer { background:var(--dark); color:rgba(255,255,255,.55); }
   .qty-btn  { width:32px; height:32px; }
   .ci-price { font-size:.82rem; }
 }
+
+/* Short consent line above "Place Order via WhatsApp" */
+.deliv-agree {
+  margin-top: .8rem;
+  font-size: .78rem;
+  color: var(--muted);
+  line-height: 1.55;
+  text-align: center;
+}
+.deliv-agree a {
+  color: var(--green-dark);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.deliv-agree a:hover,
+.deliv-agree a:focus-visible { color: var(--green); }
+
+/* ─────────────────────────────────────────────────────────────
+   DRAFT — Legal modal (<dialog>) styles.
+   Not active. Kept commented so the live page is unchanged.
+   Uncomment together with the HTML + JS drafts to enable the
+   "View Terms / Privacy" modal. Uses the native <dialog>
+   element so focus trap, Esc-to-close, and the backdrop are
+   handled by the browser — no library, no CSP changes needed.
+   ─────────────────────────────────────────────────────────────
+.deliv-agree {
+  margin-top: .8rem;
+  font-size: .78rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.link-btn {
+  background: none; border: none; padding: 0;
+  color: var(--green-dark); font-weight: 700;
+  text-decoration: underline; text-underline-offset: 2px;
+  cursor: pointer; font: inherit;
+}
+.link-btn:hover,
+.link-btn:focus-visible { color: var(--green); }
+
+.legal-dialog {
+  padding: 0;
+  border: none;
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-lg);
+  width: min(680px, calc(100vw - 2rem));
+  max-width: 100%;
+  max-height: min(85dvh, 720px);
+  overflow: hidden;
+  background: var(--white); color: var(--text);
+}
+.legal-dialog[open] { display: flex; flex-direction: column; }
+.legal-dialog::backdrop {
+  background: rgba(0, 0, 0, .55);
+  backdrop-filter: blur(2px);
+}
+
+.legal-dialog-hd {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.legal-dialog-hd h2 {
+  font-size: 1.05rem; font-weight: 800; color: var(--dark);
+  margin: 0; letter-spacing: -.01em;
+}
+.legal-dialog-close {
+  width: 34px; height: 34px; border-radius: 8px;
+  background: var(--bg); color: var(--muted);
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .9rem; transition: all var(--ease);
+}
+.legal-dialog-close:hover { background: #fecaca; color: #991b1b; }
+.legal-dialog-close:focus-visible {
+  outline: 2px solid rgba(40,167,69,.4); outline-offset: 2px;
+}
+
+.legal-dialog-body {
+  flex: 1 1 auto; min-height: 0;
+  overflow-y: auto; overscroll-behavior: contain;
+  padding: 1.1rem 1.25rem 1.25rem;
+}
+.legal-dialog-body .legal-block { margin-bottom: 1.35rem; }
+.legal-dialog-body .legal-block:last-child { margin-bottom: 0; }
+
+.legal-dialog-ft {
+  padding: .8rem 1.25rem calc(.8rem + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  display: flex; justify-content: flex-end; gap: .6rem;
+  flex-shrink: 0; background: var(--bg);
+}
+
+@media (max-width: 480px) {
+  .legal-dialog {
+    width: 100vw; max-width: 100vw;
+    max-height: 100dvh; height: 100dvh;
+    border-radius: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .legal-dialog::backdrop { backdrop-filter: none; }
+}
+   ───────────────────────────────────────────────────────────── */
+

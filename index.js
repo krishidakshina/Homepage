@@ -207,8 +207,100 @@ function openCart()  {
   cartOverlay.classList.add('o');
   document.body.style.overflow = 'hidden';
   setCheckoutStep('review');
+  startViewportTracking();
 }
-function closeCart() { cartDrawer.classList.remove('o'); cartOverlay.classList.remove('o'); document.body.style.overflow = ''; }
+function closeCart() {
+  cartDrawer.classList.remove('o');
+  cartOverlay.classList.remove('o');
+  document.body.style.overflow = '';
+  stopViewportTracking();
+}
+
+/* ── Mobile keyboard handling for the delivery form ──────────────────────────
+   On mobile browsers the on-screen (virtual) keyboard shrinks the VISUAL
+   viewport but usually leaves the LAYOUT viewport (and therefore 100dvh)
+   unchanged. Without help, the cart drawer stays 100dvh tall, so its bottom
+   half — including the last address fields, "Use my current location", and
+   the "Place Order" button — is hidden underneath the keyboard and cannot be
+   reached by scrolling.
+
+   We fix this by:
+     1. Reading window.visualViewport.height and pinning the drawer to it via
+        the --vvh CSS variable (so the drawer physically shrinks with the kb).
+     2. Publishing the keyboard's overlap height via --kb-h so the delivery
+        panel's scroll container reserves matching bottom padding.
+     3. Scrolling the currently-focused field into view (centred) after the
+        keyboard finishes animating in.
+   ─────────────────────────────────────────────────────────────────────────── */
+const vv = window.visualViewport || null;
+let viewportRafPending = false;
+
+function updateViewportMetrics() {
+  viewportRafPending = false;
+  const rootStyle = document.documentElement.style;
+  if (vv) {
+    const vh = vv.height;
+    rootStyle.setProperty('--vvh', vh + 'px');
+    // Overlap = layout viewport height − visual viewport height. Clamp to 0
+    // because on desktop / when the keyboard is closed the difference can be
+    // a tiny sub-pixel value or even slightly negative.
+    const overlap = Math.max(0, window.innerHeight - vh);
+    rootStyle.setProperty('--kb-h', overlap + 'px');
+  } else {
+    rootStyle.setProperty('--vvh', window.innerHeight + 'px');
+    rootStyle.setProperty('--kb-h', '0px');
+  }
+}
+
+function scheduleViewportUpdate() {
+  if (viewportRafPending) return;
+  viewportRafPending = true;
+  requestAnimationFrame(updateViewportMetrics);
+}
+
+function startViewportTracking() {
+  updateViewportMetrics();
+  if (vv) {
+    vv.addEventListener('resize', scheduleViewportUpdate);
+    vv.addEventListener('scroll', scheduleViewportUpdate);
+  } else {
+    window.addEventListener('resize', scheduleViewportUpdate);
+  }
+}
+
+function stopViewportTracking() {
+  if (vv) {
+    vv.removeEventListener('resize', scheduleViewportUpdate);
+    vv.removeEventListener('scroll', scheduleViewportUpdate);
+  } else {
+    window.removeEventListener('resize', scheduleViewportUpdate);
+  }
+  const rootStyle = document.documentElement.style;
+  rootStyle.removeProperty('--vvh');
+  rootStyle.removeProperty('--kb-h');
+}
+
+/* When the user taps into a delivery field, wait for the keyboard to open
+   (visualViewport 'resize' fires ~200–350 ms later on iOS Safari) and then
+   scroll the focused control to the middle of the still-visible drawer area.
+   Delegated on cartDeliveryPanel so it survives future field additions. */
+if (cartDeliveryPanel) {
+  cartDeliveryPanel.addEventListener('focusin', (ev) => {
+    const target = ev.target;
+    if (!target?.matches?.('input, textarea, select, button')) return;
+    // Two-stage scroll: an immediate nudge for browsers that don't animate the
+    // keyboard, then a delayed one that lands after the keyboard settles.
+    const bring = () => {
+      try {
+        target.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+      } catch {
+        target.scrollIntoView(false);
+      }
+    };
+    requestAnimationFrame(bring);
+    setTimeout(bring, 320);
+  });
+}
 
 document.getElementById('cartBtn').addEventListener('click', openCart);
 document.getElementById('cartClose').addEventListener('click', closeCart);
@@ -231,6 +323,7 @@ function renderCart() {
     cartTotalEl.textContent = '\u20b90';
     cartTotalDeliveryEl.textContent = '\u20b90';
     setCheckoutStep('review');
+    if (typeof syncProductCards === 'function') syncProductCards();
     return;
   }
 
@@ -311,6 +404,7 @@ function renderCart() {
   });
 
   updateOrderBtnState();
+  if (typeof syncProductCards === 'function') syncProductCards();
 }
 
 btnToDelivery.addEventListener('click', () => {
@@ -330,45 +424,145 @@ stepDelivery.addEventListener('click', () => {
   setCheckoutStep('delivery', { focusField: true, warnWhenEmpty: true });
 });
 
-/* Add to cart – reads product name, price, unit from the card DOM. */
-document.querySelectorAll('.btn-add').forEach(btn => {
-  btn.addEventListener('click', function () {
-    const card  = this.closest('.pcard');
-    const name  = card.querySelector('.pname').textContent.trim();
-    // Price node text looks like "₹55 / 250 g" – capture ONLY the first number
-    // (stripping all non-digits would concatenate "55" + "250" = 55250).
-    const priceEl = card.querySelector('.pprice');
-    const priceText = priceEl.textContent.trim();
-    const priceMatch = priceText.match(/\d[\d,]*/);
-    const price = priceMatch ? Number.parseInt(priceMatch[0].replaceAll(',', ''), 10) : 0;
-    // Unit is everything after the "/" (e.g. "kg", "250 g", "dozen")
-    const smallEl = priceEl.querySelector('small');
-    let unitRaw = '';
-    if (smallEl) {
-      unitRaw = smallEl.textContent;
-    } else {
-      const m = priceText.match(/\/\s*(.+)/);
-      unitRaw = m ? m[1] : '';
-    }
-    const unit = unitRaw.replace(/^\/\s*/, '').trim();
-    const key  = name.toLowerCase().replace(/\s+/g, '-');
+/* ── Product-card quantity selector ─────────────────────────────────────────
+   Each product card starts with a single <button class="btn-add"> "+" chip.
+   On the first click that chip morphs into a horizontal [− N +] counter
+   (.qty-inline) — subsequent clicks on the ± buttons update the count in
+   place. When the count drops back to zero the counter is hidden and the
+   Add button reappears. The cart drawer's own ± controls also feed through
+   syncProductCards(), so removing an item from the drawer reverts the card
+   to the Add state automatically.
+   ─────────────────────────────────────────────────────────────────────────── */
 
-    // Cap qty per item and total distinct items to blunt storage-tampering abuse.
-    if (cart[key]) {
-      if (cart[key].qty < MAX_QTY_PER_ITEM) cart[key].qty++;
+// Derive the same stable key that the cart uses, and pull price / unit from
+// the card DOM. Kept in one helper so the Add button and the ± buttons agree
+// on identity even if the markup evolves.
+function readCardProduct(card) {
+  const name = card.querySelector('.pname').textContent.trim();
+  const priceEl = card.querySelector('.pprice');
+  const priceText = priceEl.textContent.trim();
+  // Price node text looks like "₹55 / 250 g" — capture ONLY the first number
+  // (stripping all non-digits would concatenate "55" + "250" = 55250).
+  const priceMatch = priceText.match(/\d[\d,]*/);
+  const price = priceMatch ? Number.parseInt(priceMatch[0].replaceAll(',', ''), 10) : 0;
+  const smallEl = priceEl.querySelector('small');
+  let unitRaw = '';
+  if (smallEl) {
+    unitRaw = smallEl.textContent;
+  } else {
+    const m = priceText.match(/\/\s*(.+)/);
+    unitRaw = m ? m[1] : '';
+  }
+  const unit = unitRaw.replace(/^\/\s*/, '').trim();
+  const key  = name.toLowerCase().replace(/\s+/g, '-');
+  return { key, name, price, unit };
+}
+
+// Apply a qty delta to the cart entry represented by a product card.
+// delta > 0 adds/increments (capped by MAX_QTY_PER_ITEM), delta < 0 decrements
+// and removes the row when it hits zero.
+function changeCardQty(card, delta) {
+  const { key, name, price, unit } = readCardProduct(card);
+  const existing = cart[key];
+  if (delta > 0) {
+    if (existing) {
+      if (existing.qty < MAX_QTY_PER_ITEM) existing.qty += 1;
     } else if (Object.keys(cart).length < MAX_CART_ITEMS) {
       cart[key] = { name, price, unit, qty: 1 };
     }
-    renderCart();
+  } else if (delta < 0 && existing) {
+    existing.qty -= 1;
+    if (existing.qty <= 0) delete cart[key];
+  }
+  renderCart(); // renderCart() also invokes syncProductCards()
+}
 
-    // Button feedback (safe DOM APIs – no innerHTML, no inline style assignment).
-    setBtnIcon(this, 'fa-solid fa-check');
-    this.classList.add('btn-add--ok');
-    setTimeout(() => {
-      setBtnIcon(this, 'fa-solid fa-plus');
-      this.classList.remove('btn-add--ok');
-    }, 1400);
+// Insert the hidden [− N +] counter next to every existing Add button and
+// wrap the pair in a shared .qty-slot so the swap doesn't reflow the price row.
+function initProductCards() {
+  document.querySelectorAll('.pcard .btn-add').forEach(btn => {
+    // Guard against double-init (e.g. hot reload).
+    if (btn.parentElement?.classList.contains('qty-slot')) return;
+
+    const slot = document.createElement('div');
+    slot.className = 'qty-slot';
+    btn.parentNode.insertBefore(slot, btn);
+    slot.appendChild(btn);
+
+    const counter = document.createElement('div');
+    counter.className = 'qty-inline is-hidden';
+    counter.setAttribute('role', 'group');
+    counter.setAttribute('aria-label', 'Item quantity');
+
+    const minus = document.createElement('button');
+    minus.type = 'button';
+    minus.className = 'qi-btn qi-minus';
+    minus.dataset.op = '-';
+    minus.setAttribute('aria-label', 'Decrease quantity');
+    minus.textContent = '\u2212'; // real minus sign
+
+    const num = document.createElement('span');
+    num.className = 'qi-num';
+    num.setAttribute('aria-live', 'polite');
+    num.textContent = '0';
+
+    const plus = document.createElement('button');
+    plus.type = 'button';
+    plus.className = 'qi-btn qi-plus';
+    plus.dataset.op = '+';
+    plus.setAttribute('aria-label', 'Increase quantity');
+    plus.textContent = '+';
+
+    counter.appendChild(minus);
+    counter.appendChild(num);
+    counter.appendChild(plus);
+    slot.appendChild(counter);
   });
+}
+
+// Reflect current cart state on the product cards: show the counter (with the
+// live qty) if the item is in the cart, otherwise show the Add button.
+function syncProductCards() {
+  document.querySelectorAll('.pcard').forEach(card => {
+    const slot = card.querySelector('.qty-slot');
+    if (!slot) return;
+    const addBtn  = slot.querySelector('.btn-add');
+    const counter = slot.querySelector('.qty-inline');
+    if (!addBtn || !counter) return;
+
+    const { key } = readCardProduct(card);
+    const qty = cart[key]?.qty ?? 0;
+
+    if (qty > 0) {
+      counter.querySelector('.qi-num').textContent = String(qty);
+      addBtn.classList.add('is-hidden');
+      counter.classList.remove('is-hidden');
+    } else {
+      addBtn.classList.remove('is-hidden');
+      counter.classList.add('is-hidden');
+    }
+  });
+}
+
+initProductCards();
+
+// Single delegated click handler for both the Add button and the ± controls.
+// Delegated so future cards added dynamically (search, filter, pagination)
+// continue to work without re-binding.
+document.addEventListener('click', (ev) => {
+  const card = ev.target.closest('.pcard');
+  if (!card) return;
+
+  const addBtn = ev.target.closest('.btn-add');
+  if (addBtn) {
+    changeCardQty(card, +1);
+    return;
+  }
+
+  const qiBtn = ev.target.closest('.qi-btn');
+  if (qiBtn) {
+    changeCardQty(card, qiBtn.dataset.op === '+' ? +1 : -1);
+  }
 });
 
 /* Clear entire cart */
@@ -737,3 +931,61 @@ for (let i = 0; i < 20; i++) {
   p.style.opacity           = (randFloat() * 0.12 + 0.03).toFixed(3);
   ptcEl.appendChild(p);
 }
+
+/* ─────────────────────────────────────────────────────────────
+   DRAFT — Legal modal handler.
+   Not active. Kept commented so nothing in the live page runs.
+   Uncomment together with the HTML + CSS drafts to enable the
+   "View Terms / Privacy" modal.
+
+   Behaviour when enabled:
+     - Single delegated click handler: opens the target <dialog>
+       via showModal(), closes on any [data-close] element, and
+       closes on a click on the backdrop itself.
+     - Mirrors the .legal-body inner HTML from the on-page
+       #privacy / #terms sections into the dialog body the first
+       time each dialog is opened, so those sections remain the
+       single source of truth. When you later split policies into
+       standalone pages, replace cloneContent() with a fetch() of
+       the standalone URL and set innerHTML from the response.
+   ─────────────────────────────────────────────────────────────
+(function initLegalDialogs() {
+  const map = {
+    'terms-dialog':   { src: '#terms',   body: '#terms-dialog-body'   },
+    'privacy-dialog': { src: '#privacy', body: '#privacy-dialog-body' },
+  };
+
+  function cloneContent(dialogId) {
+    const cfg = map[dialogId];
+    if (!cfg) return;
+    const body = document.querySelector(cfg.body);
+    if (!body || body.dataset.hydrated === '1') return;
+    const src = document.querySelector(cfg.src + ' .legal-body');
+    if (!src) return;
+    body.innerHTML = src.innerHTML;
+    body.dataset.hydrated = '1';
+  }
+
+  document.addEventListener('click', (e) => {
+    const opener = e.target.closest('[data-open]');
+    if (opener) {
+      const id = opener.dataset.open;
+      const dlg = document.getElementById(id);
+      if (dlg && typeof dlg.showModal === 'function') {
+        cloneContent(id);
+        dlg.showModal();
+      }
+      return;
+    }
+    const closer = e.target.closest('[data-close]');
+    if (closer) {
+      closer.closest('dialog')?.close();
+      return;
+    }
+    if (e.target.tagName === 'DIALOG' && e.target.classList.contains('legal-dialog')) {
+      e.target.close();
+    }
+  });
+})();
+   ───────────────────────────────────────────────────────────── */
+

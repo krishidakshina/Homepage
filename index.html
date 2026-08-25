@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- interactive-widget=resizes-content: on supporting browsers (Chrome/Edge/
+       Android WebView), the on-screen keyboard shrinks the LAYOUT viewport
+       (not just the visual viewport), so 100dvh / fixed drawers reflow
+       correctly and bottom form fields don't get hidden behind the keyboard. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
   <meta name="theme-color" content="#28a745">
   <meta name="description" content="KrishiDakshina – Farm-fresh Natural Nourishing Produce delivered to your doorstep. Fresh produce, dairy, and pantry essentials.">
   <meta name="keywords" content="grocery delivery, fresh produce, farm to table, KrishiDakshina, India">
@@ -115,11 +119,18 @@
           Your Trusted Partner for Harvest Produce.
           <a href="#contact" class="hero-contact-link">Contact Us</a>.
         </p>
+        <p class="hero-sub hero-sub--export">
+          <i class="fa-solid fa-earth-asia" aria-hidden="true"></i>
+          <span><strong>Export of farm products</strong> &mdash; bulk &amp; international enquiries welcome.</span>
+        </p>
         <div class="hero-btns">
           <a href="#products" class="btn btn-primary">
             <i class="fa-solid fa-basket-shopping"></i> Shop Now
           </a>
           <a href="#about" class="btn btn-ghost">Our Story</a>
+          <a href="#contact" class="btn btn-ghost btn-export">
+            <i class="fa-solid fa-earth-asia" aria-hidden="true"></i> Export Enquiry
+          </a>
         </div>
         <div class="hero-stats">
           <div><div class="stat-n">10+</div><div class="stat-l">Products</div></div>
@@ -132,13 +143,13 @@
       <div class="hero-vis">
         <div class="hero-card-wrap">
           <div class="hc-main">
-            <div class="hc-img">
-              <img src="product_images/veggie-box.jpg" alt="Seasonal Veggie Box" data-fallback="🥗">
+            <div class="hc-img hc-img-sachet">
+              <img src="product_images/index0.png" alt="Harvest Nutri Sachet" data-fallback="🥗">
             </div>
             <div class="hc-body">
               <span class="hc-cat">🌿 Nature's Intelligence</span>
-              <div class="hc-name">Seasonal Veggie Box</div>
-              <div class="hc-price">₹299 <small class="hc-unit-sm">/ box</small></div>
+              <div class="hc-name">Harvest Nutri Sachet</div>
+              <div class="hc-price">₹299</div>
             </div>
           </div>
           <div class="hc-foot">
@@ -203,6 +214,18 @@
         <h2 class="section-title">Fresh <span>Bestsellers</span></h2>
         <p class="section-desc">Hand-picked from our farm community for peak freshness.</p>
       </div>
+
+      <div class="prod-note" role="note">
+        <i class="fa-solid fa-seedling" aria-hidden="true"></i>
+        <p>
+          <strong>We&rsquo;re just getting started.</strong>
+          Not all categories are live yet &mdash; we&rsquo;re gradually onboarding farms and
+          expanding our range. We also
+          <strong>export farm products</strong> for bulk and international enquiries.
+          Don&rsquo;t see what you need?
+          <a href="#contact">Message us on WhatsApp</a> and we&rsquo;ll try to source it for you.
+        </p>
+      </div>
     </div>
 
     <!--
@@ -235,215 +258,112 @@
     ║     (handled by a delegated listener in index.js – no inline JS) ║
     ║                                                                  ║
     ║  5. EXAMPLE FILE NAMES ALREADY WIRED UP                         ║
-    ║     product_images/tomato.svg       → Card 1                     ║
-    ║     product_images/eggs.svg         → Card 2                     ║
-    ║     product_images/spinach.svg      → Card 3                     ║
-    ║     product_images/bread.svg        → Card 4                     ║
-    ║     product_images/mango.svg        → Card 5                     ║
-    ║     product_images/milk.svg         → Card 6                     ║
-    ║     product_images/carrot.svg       → Card 7                     ║
-    ║     product_images/yogurt.svg       → Card 8                     ║
-    ║     product_images/brown-rice.svg   → Card 9                     ║
-    ║     product_images/avocado.svg      → Card 10                    ║
-    ║     product_images/mixed-nuts.svg   → Card 11                    ║
-    ║     product_images/turmeric.svg     → Card 12                    ║
+    ║     product_images/P1.jpg           → Card 1 (Groundnut Oil)     ║
+    ║     product_images/P2.jpg           → Card 2 (Coconut Oil)       ║
+    ║     product_images/P3.jpg           → Card 3 (Honey)             ║
+    ║     product_images/P4.jpg           → Card 4 (Finger Millet)     ║
+    ║     product_images/P5.jpg           → Card 5 (Harvest Nutri)     ║
+    ║     product_images/P6.jpg           → Card 6 (Jaggery Powder)    ║
     ║                                                                  ║
     ╚══════════════════════════════════════════════════════════════════╝
     -->
     <div class="prod-grid">
 
-      <!-- ── Card 1 ── src="product_images/tomato.svg" | 600×600 px JPG/PNG, max 200 KB -->
+      <!-- ── Card 1 ── src="product_images/P1.jpg" | Cold-Pressed Groundnut Oil -->
       <article class="pcard fi">
+        <span class="pbadge org">Cold-Pressed</span>
         <div class="pimg">
-          <img src="product_images/tomato.svg" alt="Tomatoes" data-fallback="🍅">
+          <img src="product_images/P1.jpg" alt="Cold-Pressed Groundnut Oil" data-fallback="🥜">
         </div>
         <div class="pbody">
-          <span class="pcat">Vegetables</span>
-          <h3 class="pname">Tomatoes</h3>
-          <p class="pdesc">Vine-ripened, sun-kissed tomatoes from certified farms. Sweet, juicy, and packed with flavour.</p>
+          <span class="pcat">Oils</span>
+          <h3 class="pname">Cold-Pressed Groundnut Oil</h3>
+          <p class="pdesc">Traditional wood-pressed groundnut oil, extracted at low temperatures to retain natural aroma and nutrients. No refining, no chemicals — just pure, honest oil.</p>
           <div class="pfoot">
-            <div class="pprice">₹89 <small>/ kg</small></div>
+            <div class="pprice">₹280 <small>/ litre</small></div>
             <button class="btn-add" aria-label="Add to cart"><i class="fa-solid fa-plus"></i></button>
           </div>
         </div>
       </article>
 
-      <!-- ── Card 2 ── src="product_images/eggs.svg" | 600×600 px JPG/PNG, max 200 KB -->
+      <!-- ── Card 2 ── src="product_images/P2.jpg" | Cold-Pressed Coconut Oil -->
       <article class="pcard fi">
-        <span class="pbadge hot">Fresh Pick</span>
+        <span class="pbadge org">Cold-Pressed</span>
         <div class="pimg">
-          <img src="product_images/eggs.svg" alt="Farm Fresh Eggs" data-fallback="🥚">
+          <img src="product_images/P2.jpg" alt="Cold-Pressed Coconut Oil" data-fallback="🥥">
         </div>
         <div class="pbody">
-          <span class="pcat">Dairy &amp; Eggs</span>
-          <h3 class="pname">Farm Fresh Eggs</h3>
-          <p class="pdesc">Free-range, cage-free eggs from happy hens. Rich golden yolks and firm whites every time.</p>
+          <span class="pcat">Oils</span>
+          <h3 class="pname">Cold-Pressed Coconut Oil</h3>
+          <p class="pdesc">Traditional wood-pressed coconut oil from sun-dried coastal Karnataka copra. Unrefined and unbleached — retains its natural aroma, sweetness, and every drop of goodness.</p>
           <div class="pfoot">
-            <div class="pprice">₹129 <small>/ dozen</small></div>
+            <div class="pprice">₹320 <small>/ litre</small></div>
             <button class="btn-add" aria-label="Add to cart"><i class="fa-solid fa-plus"></i></button>
           </div>
         </div>
       </article>
 
-      <!-- ── Card 3 ── src="product_images/spinach.svg" | 600×600 px JPG/PNG, max 200 KB -->
+      <!-- ── Card 3 ── src="product_images/P3.jpg" | Honey -->
       <article class="pcard fi">
+        <span class="pbadge org">Raw &amp; Unfiltered</span>
         <div class="pimg">
-          <img src="product_images/spinach.svg" alt="Baby Spinach" data-fallback="🥬">
+          <img src="product_images/P3.jpg" alt="Honey" data-fallback="🍯">
         </div>
         <div class="pbody">
-          <span class="pcat">Leafy Greens</span>
-          <h3 class="pname">Baby Spinach</h3>
-          <p class="pdesc">Tender baby spinach, harvested at peak nutrition. Perfect for salads, smoothies &amp; sautés.</p>
+          <span class="pcat">Naturals</span>
+          <h3 class="pname">Honey</h3>
+          <p class="pdesc">Natural honey harvested from bees raised on our own farm. Unheated, unfiltered, and free of additives — pure golden goodness straight from the hive.</p>
           <div class="pfoot">
-            <div class="pprice">₹55 <small>/ 250 g</small></div>
+            <div class="pprice">₹350 <small>/ 500 g</small></div>
             <button class="btn-add" aria-label="Add to cart"><i class="fa-solid fa-plus"></i></button>
           </div>
         </div>
       </article>
 
-      <!-- ── Card 4 ── src="product_images/bread.svg" | 600×600 px JPG/PNG, max 200 KB -->
+      <!-- ── Card 4 ── src="product_images/P4.jpg" | Finger Millet -->
       <article class="pcard fi">
         <div class="pimg">
-          <img src="product_images/bread.svg" alt="Multigrain Bread" data-fallback="🍞">
-        </div>
-        <div class="pbody">
-          <span class="pcat">Bakery</span>
-          <h3 class="pname">Multigrain Bread</h3>
-          <p class="pdesc">Stone-baked multigrain loaf loaded with seeds and ancient grains. No preservatives, no shortcuts.</p>
-          <div class="pfoot">
-            <div class="pprice">₹75 <small>/ loaf</small></div>
-            <button class="btn-add" aria-label="Add to cart"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </article>
-
-      <!-- ── Card 5 ── src="product_images/mango.svg" | 600×600 px JPG/PNG, max 200 KB -->
-      <article class="pcard fi">
-        <span class="pbadge sea">Seasonal</span>
-        <div class="pimg">
-          <img src="product_images/mango.svg" alt="Alphonso Mangoes" data-fallback="🥭">
-        </div>
-        <div class="pbody">
-          <span class="pcat">Fruits</span>
-          <h3 class="pname">Alphonso Mangoes</h3>
-          <p class="pdesc">The king of mangoes, sourced directly from Ratnagiri. Fibre-free, ultra-sweet, and supremely aromatic.</p>
-          <div class="pfoot">
-            <div class="pprice">₹249 <small>/ kg</small></div>
-            <button class="btn-add" aria-label="Add to cart"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </article>
-
-      <!-- ── Card 6 ── src="product_images/milk.svg" | 600×600 px JPG/PNG, max 200 KB -->
-      <article class="pcard fi">
-        <div class="pimg">
-          <img src="product_images/milk.svg" alt="Full Cream A2 Milk" data-fallback="🥛">
-        </div>
-        <div class="pbody">
-          <span class="pcat">Dairy</span>
-          <h3 class="pname">Full Cream A2 Milk</h3>
-          <p class="pdesc">Fresh A2 cow milk from grass-fed desi cows. Rich in natural fats and nutrients, delivered daily.</p>
-          <div class="pfoot">
-            <div class="pprice">₹65 <small>/ litre</small></div>
-            <button class="btn-add" aria-label="Add to cart"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </article>
-
-      <!-- ── Card 7 ── src="product_images/carrot.svg" | 600×600 px JPG/PNG, max 200 KB -->
-      <article class="pcard fi">
-        <div class="pimg">
-          <img src="product_images/carrot.svg" alt="Carrots" data-fallback="🥕">
-        </div>
-        <div class="pbody">
-          <span class="pcat">Vegetables</span>
-          <h3 class="pname">Carrots</h3>
-          <p class="pdesc">Crunchy, naturally sweet carrots grown without pesticides. Great for juicing, cooking, or snacking.</p>
-          <div class="pfoot">
-            <div class="pprice">₹45 <small>/ kg</small></div>
-            <button class="btn-add" aria-label="Add to cart"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </article>
-
-      <!-- ── Card 8 ── src="product_images/yogurt.svg" | 600×600 px JPG/PNG, max 200 KB -->
-      <article class="pcard fi">
-        <span class="pbadge hot">Fresh Pick</span>
-        <div class="pimg">
-          <img src="product_images/yogurt.svg" alt="Greek Yogurt" data-fallback="🫩">
-        </div>
-        <div class="pbody">
-          <span class="pcat">Dairy</span>
-          <h3 class="pname">Greek Yogurt</h3>
-          <p class="pdesc">Thick, creamy probiotic-rich Greek yogurt. No artificial flavours — just pure cultured goodness.</p>
-          <div class="pfoot">
-            <div class="pprice">₹95 <small>/ 250 g</small></div>
-            <button class="btn-add" aria-label="Add to cart"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </article>
-
-      <!-- ── Card 9 ── src="product_images/brown-rice.svg" | 600×600 px JPG/PNG, max 200 KB -->
-      <article class="pcard fi">
-        <div class="pimg">
-          <img src="product_images/brown-rice.svg" alt="Brown Basmati Rice" data-fallback="🌾">
+          <img src="product_images/P4.jpg" alt="Finger Millet" data-fallback="🌾">
         </div>
         <div class="pbody">
           <span class="pcat">Grains</span>
-          <h3 class="pname">Brown Basmati Rice</h3>
-          <p class="pdesc">Whole-grain basmati with the bran intact. Nutty flavour, lower GI, and high in dietary fibre.</p>
+          <h3 class="pname">Finger Millet</h3>
+          <p class="pdesc">Whole finger millet (ragi) sun-dried and stone-cleaned from Karnataka farms. Naturally rich in calcium and iron — perfect for ragi mudde, dosa, porridge, and rotis.</p>
           <div class="pfoot">
-            <div class="pprice">₹120 <small>/ kg</small></div>
+            <div class="pprice">₹90 <small>/ kg</small></div>
             <button class="btn-add" aria-label="Add to cart"><i class="fa-solid fa-plus"></i></button>
           </div>
         </div>
       </article>
 
-      <!-- ── Card 10 ── src="product_images/avocado.svg" | 600×600 px JPG/PNG, max 200 KB -->
-      <article class="pcard fi">
-        <span class="pbadge sea">Seasonal</span>
-        <div class="pimg">
-          <img src="product_images/avocado.jpg" alt="Ripe Avocados" data-fallback="🥑">
-        </div>
-        <div class="pbody">
-          <span class="pcat">Fruits</span>
-          <h3 class="pname">Ripe Avocados</h3>
-          <p class="pdesc">Buttery, heart-healthy avocados sourced from hill farms. Ready to eat, rich in good fats.</p>
-          <div class="pfoot">
-            <div class="pprice">₹149 <small>/ piece</small></div>
-            <button class="btn-add" aria-label="Add to cart"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </article>
-
-      <!-- ── Card 11 ── src="product_images/mixed-nuts.svg" | 600×600 px JPG/PNG, max 200 KB -->
-      <article class="pcard fi">
-        <div class="pimg">
-          <img src="product_images/mixed-nuts.svg" alt="Mixed Nuts" data-fallback="🥜">
-        </div>
-        <div class="pbody">
-          <span class="pcat">Dry Fruits</span>
-          <h3 class="pname">Mixed Nuts &amp; Seeds</h3>
-          <p class="pdesc">Almonds, cashews, walnuts &amp; pumpkin seeds — roasted in small batches with zero oil or salt added.</p>
-          <div class="pfoot">
-            <div class="pprice">₹399 <small>/ 250 g</small></div>
-            <button class="btn-add" aria-label="Add to cart"><i class="fa-solid fa-plus"></i></button>
-          </div>
-        </div>
-      </article>
-
-      <!-- ── Card 12 ── src="product_images/turmeric.svg" | 600×600 px JPG/PNG, max 200 KB -->
+      <!-- ── Card 5 ── src="product_images/P5.jpg" | Harvest Nutri Sachet -->
       <article class="pcard fi">
         <span class="pbadge hot">Bestseller</span>
         <div class="pimg">
-          <img src="product_images/turmeric.svg" alt="Turmeric Powder" data-fallback="🟡">
+          <img src="product_images/P5.jpg" alt="Harvest Nutri Sachet" data-fallback="🥗">
         </div>
         <div class="pbody">
-          <span class="pcat">Spices</span>
-          <h3 class="pname">Pure Turmeric Powder</h3>
-          <p class="pdesc">High-curcumin turmeric stone-ground from heirloom varieties. Vibrant colour, strong aroma, zero fillers.</p>
+          <span class="pcat">Wellness</span>
+          <h3 class="pname">Harvest Nutri Sachet</h3>
+          <p class="pdesc">A daily nutrition sachet crafted from farm-sourced grains, seeds, and superfoods. Convenient single-serve packs — just mix, sip, and nourish.</p>
           <div class="pfoot">
-            <div class="pprice">₹75 <small>/ 100 g</small></div>
+            <div class="pprice">₹299 <small>/ box</small></div>
+            <button class="btn-add" aria-label="Add to cart"><i class="fa-solid fa-plus"></i></button>
+          </div>
+        </div>
+      </article>
+
+      <!-- ── Card 6 ── src="product_images/P6.jpg" | Natural Jaggery Powder -->
+      <article class="pcard fi">
+        <div class="pimg">
+          <img src="product_images/P6.jpg" alt="Natural Jaggery Powder" data-fallback="🟫">
+        </div>
+        <div class="pbody">
+          <span class="pcat">Sweeteners</span>
+          <h3 class="pname">Natural Jaggery Powder</h3>
+          <p class="pdesc">Chemical-free jaggery powder made from freshly pressed sugarcane. Rich in iron and minerals — a wholesome, healthier alternative to refined sugar.</p>
+          <div class="pfoot">
+            <div class="pprice">₹120 <small>/ 500 g</small></div>
             <button class="btn-add" aria-label="Add to cart"><i class="fa-solid fa-plus"></i></button>
           </div>
         </div>
@@ -462,7 +382,7 @@
 
       <div class="about-vis fi">
         <div class="about-img">
-          <img src="product_images/about-farm.jpg" alt="Our Farm" data-fallback="🌾">
+          <img src="product_images/index1.png" alt="Harvest Nutri Sachet" data-fallback="🥗">
         </div>
         <div class="afc afc-1">
           <div><div class="afc-n">50+</div><div class="afc-l">Farm Community</div></div>
@@ -656,6 +576,150 @@
 </section>
 
 <!-- ══════════════════════════════════
+     PRIVACY POLICY
+     Anchor target for the footer "Privacy Policy" link. Content is neutral
+     boilerplate tailored to what this site ACTUALLY does today:
+       • cart + customer details live in the browser's localStorage only
+       • orders are handed off to WhatsApp — no online payment
+       • one third-party API call (postalpincode.in) for pincode → city
+       • browser Geolocation on the "Use my current location" button
+     Entries wrapped in <em class="legal-fill">[[FILL: …]]</em> MUST be filled
+     with the operator's real details before publishing.
+════════════════════════════════════ -->
+<section id="privacy" class="section legal">
+  <div class="container">
+    <div class="legal-hd fi">
+      <span class="section-tag"><i class="fa-solid fa-shield-halved"></i> Privacy</span>
+      <h2 class="section-title">Privacy <span>Policy</span></h2>
+      <p class="section-desc">
+        Complies with the DPDP Act, 2023 and the Consumer Protection (E-Commerce) Rules, 2020.
+      </p>
+    </div>
+
+    <div class="legal-body fi">
+
+      <div class="legal-tldr">
+        <strong>In short:</strong>
+        Your cart and delivery details live in your browser's <code>localStorage</code>
+        and reach us only when you tap “Place Order via WhatsApp”. No server-side
+        customer database, no analytics, no ads.
+      </div>
+
+      <div class="legal-block">
+        <h3>What we collect &amp; why</h3>
+        <p>
+          Delivery details (name, phone, address, pincode, city, notes) and cart
+          contents — used solely to fulfil the WhatsApp order you send us. Pincode
+          is looked up via <code>postalpincode.in</code> to auto-fill your city;
+          browser geolocation is used only if you tap “Use my current location”.
+          Retained by us for 24 months
+          for tax and dispute-resolution purposes. We do not collect passwords,
+          card data, or advertising identifiers, and we do not sell your data.
+        </p>
+      </div>
+
+      <div class="legal-block">
+        <h3>Grievance Officer</h3>
+        <p>
+          Chaitra ·
+          krishidakshina@gmail.com ·
+          +91 8970059754 · response within 30 days
+          of receipt.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════
+     TERMS OF SERVICE
+     Covers Delivery Info and Returns & Refunds as sub-blocks; those footer
+     links point at #terms-delivery and #terms-returns respectively.
+════════════════════════════════════ -->
+<section id="terms" class="section legal legal--alt">
+  <div class="container">
+    <div class="legal-hd fi">
+      <span class="section-tag"><i class="fa-solid fa-file-contract"></i> Terms</span>
+      <h2 class="section-title">Terms of <span>Service</span></h2>
+      <p class="section-desc">
+        By using this site or placing an order, you agree to the terms below.
+      </p>
+    </div>
+
+    <div class="legal-body fi">
+
+      <div class="legal-block">
+        <h3>Seller</h3>
+        <p>
+          KrishiDakshina,
+          Sira, Tumkur District, India.
+          GST: 29BQAPG9900L1ZL.
+          Customer care: krishidakshina@gmail.com /
+          +91 8970059754. Disclosed per the Consumer
+          Protection (E-Commerce) Rules, 2020.
+        </p>
+      </div>
+
+      <div class="legal-block">
+        <h3>How ordering works</h3>
+        <p>
+          Prices are in INR,
+          inclusive of taxes.
+          Tapping “Place Order via WhatsApp” sends us a purchase request — a
+          contract is formed only when we confirm availability, price and slot on
+          WhatsApp. Payment:
+          COD or UPI on confirmation.
+          We do not accept or store card details. Fraudulent, automated, resale,
+          or price-tampered orders will be rejected.
+        </p>
+      </div>
+
+      <div class="legal-block" id="terms-delivery">
+        <h3>Delivery</h3>
+        <p>
+          Area:
+          Bengaluru urban, within 10 km
+          — orders outside this area are declined at confirmation. Window:
+          weekly delivery, exact slot
+          confirmed on WhatsApp. Missed-doorstep re-attempt charge:
+          no charge, one retry.
+        </p>
+      </div>
+
+      <div class="legal-block" id="terms-returns">
+        <h3>Returns &amp; refunds</h3>
+        <p>
+          Perishables (fruit, veg, dairy, bakery) are checked at the doorstep —
+          refuse anything below par and we replace or refund in full. Unopened
+          pantry items are returnable within
+          48 hours of delivery. Refunds
+          are issued within
+          5 business days of
+          verification. Claim on WhatsApp with your order number and a photo.
+        </p>
+      </div>
+
+      <div class="legal-block">
+        <h3>Liability, IP &amp; law</h3>
+        <p>
+          Products are supplied with reasonable care and meet applicable
+          food-safety norms on the day of delivery; no other warranty is given.
+          Except for the freshness guarantee above, our liability is capped at
+          the value of the affected order. The KrishiDakshina name, logo,
+          photography and site design remain our property. These terms are
+          governed by the laws of India; courts at
+          Bengaluru have
+          exclusive jurisdiction. We may update these terms; the version in force
+          on the day you order applies to that order.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════
      FOOTER
 ════════════════════════════════════ -->
 <footer>
@@ -700,7 +764,7 @@
           <li><a href="#products">Fruits &amp; Vegetables</a></li>
           <li><a href="#products">Dairy &amp; Eggs</a></li>
           <li><a href="#products">Bakery</a></li>
-          <li><a href="#products">Book Harvest Slot</a></li>
+          <li><a href="#contact">Book Harvest Slot</a></li>
           <li><a href="#products">Pantry Staples</a></li>
         </ul>
       </div>
@@ -709,10 +773,8 @@
         <div class="fc-title">Help</div>
         <ul class="fc-links">
           <li><a href="#contact">Track Your Order</a></li>
-          <li><a href="#contact">Returns &amp; Refunds</a></li>
-          <li><a href="#contact">Delivery Info</a></li>
-          <li><a href="#contact">Privacy Policy</a></li>
-          <li><a href="#contact">Terms of Service</a></li>
+          <li><a href="#terms-returns">Returns &amp; Refunds</a></li>
+          <li><a href="#terms-delivery">Delivery Info</a></li>
         </ul>
       </div>
 
@@ -721,8 +783,8 @@
     <div class="footer-bot">
       <span>© <span id="yr"></span> KrishiDakshina. All rights reserved.</span>
       <span>Made with ❤️ in India &nbsp;·&nbsp;
-        <a href="#contact">Privacy</a> &nbsp;·&nbsp;
-        <a href="#contact">Terms</a>
+        <a href="#privacy">Privacy</a> &nbsp;·&nbsp;
+        <a href="#terms">Terms</a>
       </span>
     </div>
   </div>
@@ -812,6 +874,12 @@
         <p class="deliv-hint" id="delivHint"><output aria-live="polite"></output></p>
       </div>
 
+      <p class="deliv-agree">
+        By placing this order you agree to our
+        <a href="#terms">Terms</a> and
+        <a href="#privacy">Privacy Policy</a>.
+      </p>
+
       <button class="btn-wa-order" id="btnWaOrder" disabled>
         <i class="fa-brands fa-whatsapp wa-ico-md"></i>
         Place Order via WhatsApp
@@ -823,6 +891,58 @@
     </div>
   </div>
 </div>
+
+<!--
+  ─────────────────────────────────────────────────────────────
+  DRAFT — "View Terms / Privacy" modal (native <dialog>).
+  Not active. Kept commented so it doesn't affect the live page.
+
+  Enabling steps (later):
+    1. Uncomment this whole block.
+    2. Uncomment the .legal-dialog CSS block in index.css.
+    3. Uncomment the initLegalDialogs() block in index.js.
+    4. Optionally add a required checkbox next to the trigger
+       and gate #btnWaOrder on it (hard consent before order).
+
+  The dialog body is populated at open-time from the on-page
+  #privacy / #terms sections so those sections remain the single
+  source of truth. See index.js for the hydration helper.
+  ─────────────────────────────────────────────────────────────
+
+  <p class="deliv-agree">
+    By placing this order you agree to our
+    <button type="button" class="link-btn" data-open="terms-dialog">Terms of Service</button>
+    and
+    <button type="button" class="link-btn" data-open="privacy-dialog">Privacy Policy</button>.
+  </p>
+
+  <dialog id="terms-dialog" class="legal-dialog" aria-labelledby="terms-dialog-title">
+    <header class="legal-dialog-hd">
+      <h2 id="terms-dialog-title">Terms of Service</h2>
+      <button type="button" class="legal-dialog-close" data-close aria-label="Close">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </header>
+    <div class="legal-dialog-body" id="terms-dialog-body"></div>
+    <footer class="legal-dialog-ft">
+      <button type="button" class="btn btn-dark" data-close>Close</button>
+    </footer>
+  </dialog>
+
+  <dialog id="privacy-dialog" class="legal-dialog" aria-labelledby="privacy-dialog-title">
+    <header class="legal-dialog-hd">
+      <h2 id="privacy-dialog-title">Privacy Policy</h2>
+      <button type="button" class="legal-dialog-close" data-close aria-label="Close">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </header>
+    <div class="legal-dialog-body" id="privacy-dialog-body"></div>
+    <footer class="legal-dialog-ft">
+      <button type="button" class="btn btn-dark" data-close>Close</button>
+    </footer>
+  </dialog>
+
+-->
 
 <!-- Scroll-to-top -->
 <button id="top-btn" aria-label="Back to top">
