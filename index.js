@@ -546,6 +546,347 @@ function syncProductCards() {
 
 initProductCards();
 
+/* ────────────────────────────────────────────────────────────────
+   PRODUCT IMAGE ZOOM + GALLERY — standard e-commerce lightbox
+
+   Tap any .pimg → opens #zoomDialog with the product's first image
+   at fit-to-screen. Tap the enlarged image once more → toggles a
+   2× zoom with drag/swipe pan (browser-native scrolling on the
+   stage). ESC key (native <dialog> behaviour), the ✕ button, or a
+   click on the backdrop all close the modal.
+
+   MULTIPLE IMAGES PER PRODUCT
+   ---------------------------
+   Set `data-extra-images="N"` on <article class="pcard"> to declare
+   N additional images. The gallery expects them next to the main
+   image with a `_1`, `_2`, … suffix, keeping the same extension:
+
+       main:   product_images/P1.jpg
+       extras: product_images/P1_1.jpg
+               product_images/P1_2.jpg
+               product_images/P1_3.jpg   (when data-extra-images="3")
+
+   When N > 0 the dialog shows prev/next arrows, a "n / N+1" counter
+   and a thumbnail strip. Left/Right arrow keys, on-screen buttons,
+   thumbnail clicks and horizontal swipes all navigate. When N = 0
+   (or the attribute is missing) all gallery UI hides itself and the
+   dialog behaves exactly like the single-image lightbox.
+
+   Each .pimg is promoted to a role="button" tabindex="0" element so
+   the zoom is reachable by keyboard (Enter / Space) and announces
+   itself correctly to screen readers. The image inside .pimg gets
+   `pointer-events:none` in CSS so the click always lands on .pimg,
+   regardless of whether the pointer hit the transparent gap around
+   the object-fit:cover art.
+   ──────────────────────────────────────────────────────────────── */
+function initProductZoom() {
+  const dialog    = document.getElementById('zoomDialog');
+  const imgEl     = document.getElementById('zoomImage');
+  const stage     = document.getElementById('zoomStage');
+  const caption   = document.getElementById('zoomDialogTitle');
+  const hint      = dialog?.querySelector('.zoom-hint');
+  const closeBt   = document.getElementById('zoomClose');
+  const prevBt    = document.getElementById('zoomPrev');
+  const nextBt    = document.getElementById('zoomNext');
+  const counterEl = document.getElementById('zoomCounter');
+  const thumbsEl  = document.getElementById('zoomThumbs');
+  if (!dialog || !imgEl || !stage || !closeBt) return;
+
+  // Hard cap so a stray `data-extra-images="999"` in the HTML can't loop-DoS
+  // the browser building 999 <img> thumbnail nodes.
+  const MAX_EXTRAS = 12;
+
+  // Gallery state — one dialog serves every product, so it's fine to keep
+  // this here as function-scoped state.
+  let gallery = [];        // Array<{ src:string, alt:string }>
+  let galleryIndex = 0;
+  let swipeSuppressClick = false; // set true briefly after a real swipe
+
+  /* Derive the full image list for a product card. Convention:
+        main image is the current <img src> on .pimg;
+        extras derive from that path by inserting _1, _2, … before the ext.
+     If `data-extra-images` is missing / 0, gallery collapses to a single
+     entry and all gallery UI hides. */
+  function galleryForCard(card) {
+    const mainImg = card?.querySelector('.pimg img');
+    if (!mainImg) return [];
+    // Use the DOM property (fully-qualified URL) so <img> resolution stays
+    // consistent regardless of how the src was written in HTML.
+    const mainSrc = mainImg.currentSrc || mainImg.src;
+    const mainAlt = mainImg.alt || '';
+    const list = [{ src: mainSrc, alt: mainAlt }];
+
+    const raw = Number.parseInt(card.dataset.extraImages || '0', 10);
+    const extra = Number.isFinite(raw) ? Math.max(0, Math.min(MAX_EXTRAS, raw)) : 0;
+    if (extra === 0) return list;
+
+    // Split "…/P1.jpg" → base "…/P1", ext ".jpg" (last dot only, so files
+    // like "foo.bar.jpg" still map to "foo.bar_1.jpg"). Query strings or
+    // hashes are preserved by appending after the ext.
+    const url = mainSrc;
+    // Isolate any ?query#hash so we can put it back on the derived URLs.
+    // A regex finds the first '?' or '#' in one pass, avoiding two indexOf
+    // existence checks (also silences the "prefer includes()" lint rule).
+    const suffixMatch = /[?#]/.exec(url);
+    const suffixStart = suffixMatch ? suffixMatch.index : url.length;
+    const path = url.slice(0, suffixStart);
+    const tail = url.slice(suffixStart); // '' | '?…' | '#…' | '?…#…'
+    const dot = path.lastIndexOf('.');
+    if (dot === -1) return list;
+    const base = path.slice(0, dot);
+    const ext  = path.slice(dot);
+
+    for (let i = 1; i <= extra; i++) {
+      list.push({
+        src: `${base}_${i}${ext}${tail}`,
+        alt: `${mainAlt} \u2014 image ${i + 1}`
+      });
+    }
+    return list;
+  }
+
+  function preparePimgs() {
+    document.querySelectorAll('.pcard .pimg').forEach(pimg => {
+      if (pimg.dataset.zoomReady === '1') return;
+      const inner = pimg.querySelector('img');
+      if (!inner) return;
+      pimg.setAttribute('role', 'button');
+      pimg.setAttribute('tabindex', '0');
+      pimg.setAttribute('aria-label',
+        `View larger image of ${inner.alt || 'product'}`);
+
+      // Multi-image affordance ("1/N" pill). Applied via a data attribute
+      // that .pimg[data-count]::after reads through CSS attr() — no extra
+      // DOM node, and toggling the attribute cleanly removes the badge.
+      const card = pimg.closest('.pcard');
+      const rawExtras = Number.parseInt(card?.dataset.extraImages || '0', 10);
+      const extras = Number.isFinite(rawExtras)
+        ? Math.max(0, Math.min(MAX_EXTRAS, rawExtras))
+        : 0;
+      if (extras > 0) {
+        pimg.dataset.count = `1 / ${extras + 1}`;
+      } else {
+        delete pimg.dataset.count;
+      }
+      pimg.dataset.zoomReady = '1';
+    });
+  }
+  preparePimgs();
+
+  function updateCounter() {
+    if (!counterEl) return;
+    if (gallery.length <= 1) {
+      counterEl.textContent = '';
+      counterEl.classList.add('is-hidden');
+    } else {
+      counterEl.textContent = `${galleryIndex + 1} / ${gallery.length}`;
+      counterEl.classList.remove('is-hidden');
+    }
+  }
+
+  function updateThumbSelection() {
+    if (!thumbsEl) return;
+    thumbsEl.querySelectorAll('.zoom-thumb').forEach((b, i) => {
+      const on = i === galleryIndex;
+      b.classList.toggle('is-active', on);
+      b.setAttribute('aria-selected', String(on));
+      if (on) {
+        // Keep the active thumb visible in the horizontal scroller.
+        try {
+          b.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+        } catch { /* older browsers – no-op */ }
+      }
+    });
+  }
+
+  function buildThumbs() {
+    if (!thumbsEl) return;
+    while (thumbsEl.firstChild) thumbsEl.firstChild.remove();
+    const many = gallery.length > 1;
+    thumbsEl.classList.toggle('is-hidden', !many);
+    if (prevBt) prevBt.classList.toggle('is-hidden', !many);
+    if (nextBt) nextBt.classList.toggle('is-hidden', !many);
+    if (!many) return;
+
+    gallery.forEach((item, i) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'zoom-thumb';
+      btn.setAttribute('role', 'tab');
+      btn.setAttribute('aria-label', `Show image ${i + 1} of ${gallery.length}`);
+      btn.dataset.index = String(i);
+      const img = document.createElement('img');
+      img.src = item.src;
+      img.alt = '';
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      btn.appendChild(img);
+      thumbsEl.appendChild(btn);
+    });
+  }
+
+  function setZoomed(on) {
+    dialog.classList.toggle('is-zoomed', !!on);
+    if (hint) {
+      // textContent avoids any HTML parsing (CSP-friendly and safe).
+      hint.lastChild.nodeValue = on
+        ? ' Tap image to zoom out'
+        : ' Tap image to zoom in';
+    }
+    // Reset scroll to top-left when leaving zoomed state so the next open
+    // (or the next gallery step) starts predictably centred.
+    if (!on) stage.scrollTo({ left: 0, top: 0, behavior: 'auto' });
+  }
+
+  function showGalleryImage(idx) {
+    if (!gallery.length) return;
+    const len = gallery.length;
+    galleryIndex = ((idx % len) + len) % len; // safe wrap-around
+    const item = gallery[galleryIndex];
+    imgEl.src = item.src;
+    imgEl.alt = item.alt;
+    if (caption) caption.textContent = item.alt;
+    setZoomed(false);
+    updateCounter();
+    updateThumbSelection();
+  }
+
+  function openZoom(card) {
+    if (!card) return;
+    gallery = galleryForCard(card);
+    if (!gallery.length) return;
+    buildThumbs();
+    showGalleryImage(0);
+    if (typeof dialog.showModal === 'function') {
+      dialog.showModal();
+    } else {
+      // Ancient browsers without <dialog>: fall back to attribute open.
+      dialog.setAttribute('open', '');
+    }
+  }
+
+  function closeZoom() {
+    if (typeof dialog.close === 'function') {
+      dialog.close();
+    } else {
+      dialog.removeAttribute('open');
+    }
+    setZoomed(false);
+    imgEl.removeAttribute('src');
+    gallery = [];
+    galleryIndex = 0;
+  }
+
+  // Open handler — delegated on the page so dynamically-added cards work.
+  document.addEventListener('click', (ev) => {
+    // Don't hijack the Add button or its counter controls.
+    if (ev.target.closest('.btn-add, .qi-btn, .qty-slot')) return;
+    const pimg = ev.target.closest('.pcard .pimg');
+    if (!pimg) return;
+    openZoom(pimg.closest('.pcard'));
+  });
+
+  // Keyboard: Enter/Space on a focused .pimg opens; ArrowLeft/Right navigate
+  // when the dialog is already open and the product has >1 image.
+  document.addEventListener('keydown', (ev) => {
+    if (dialog.open) {
+      if (gallery.length > 1) {
+        if (ev.key === 'ArrowLeft')  { ev.preventDefault(); showGalleryImage(galleryIndex - 1); return; }
+        if (ev.key === 'ArrowRight') { ev.preventDefault(); showGalleryImage(galleryIndex + 1); return; }
+      }
+      return;
+    }
+    if (ev.key !== 'Enter' && ev.key !== ' ' && ev.key !== 'Spacebar') return;
+    const pimg = ev.target.closest?.('.pcard .pimg');
+    if (!pimg || document.activeElement !== pimg) return;
+    ev.preventDefault(); // stop Space from scrolling the page
+    openZoom(pimg.closest('.pcard'));
+  });
+
+  // Prev / Next arrows. stopPropagation so the stage's zoom-toggle click
+  // handler doesn't also fire on the same bubble.
+  prevBt?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    if (gallery.length > 1) showGalleryImage(galleryIndex - 1);
+  });
+  nextBt?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    if (gallery.length > 1) showGalleryImage(galleryIndex + 1);
+  });
+
+  // Thumbnail clicks — delegated on the thumbs strip.
+  thumbsEl?.addEventListener('click', (ev) => {
+    const t = ev.target.closest?.('.zoom-thumb');
+    if (!t) return;
+    ev.stopPropagation();
+    const idx = Number.parseInt(t.dataset.index || '0', 10);
+    if (Number.isFinite(idx)) showGalleryImage(idx);
+  });
+
+  // Toggle 2× zoom on tap of the enlarged image itself.
+  stage.addEventListener('click', () => {
+    if (!dialog.open) return;
+    if (swipeSuppressClick) { swipeSuppressClick = false; return; }
+    setZoomed(!dialog.classList.contains('is-zoomed'));
+  });
+
+  // Horizontal swipe for prev/next on touch devices (only when NOT zoomed;
+  // once zoomed, native overflow:auto pan wins). Ignored for mouse pointers
+  // – desktop users have the arrows / arrow keys / thumbs.
+  let swipeStartX = 0, swipeStartY = 0, swipeId = -1;
+  stage.addEventListener('pointerdown', (ev) => {
+    if (dialog.classList.contains('is-zoomed')) return;
+    if (ev.pointerType === 'mouse') return;
+    swipeId = ev.pointerId;
+    swipeStartX = ev.clientX;
+    swipeStartY = ev.clientY;
+  });
+  stage.addEventListener('pointerup', (ev) => {
+    if (ev.pointerId !== swipeId) return;
+    swipeId = -1;
+    if (gallery.length <= 1) return;
+    const dx = ev.clientX - swipeStartX;
+    const dy = ev.clientY - swipeStartY;
+    // Threshold: 40 px and predominantly horizontal.
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+    // Suppress the synthetic click that follows a tap-ended-as-swipe so the
+    // stage click handler doesn't also toggle zoom on the newly-shown image.
+    swipeSuppressClick = true;
+    showGalleryImage(galleryIndex + (dx < 0 ? 1 : -1));
+  });
+  stage.addEventListener('pointercancel', () => { swipeId = -1; });
+
+  // Explicit close-button.
+  closeBt.addEventListener('click', () => closeZoom());
+
+  // Backdrop click — a <dialog> reports a click as originating from the
+  // dialog element itself when the user clicks the ::backdrop area.
+  dialog.addEventListener('click', (ev) => {
+    if (ev.target !== dialog) return;
+    const r = dialog.getBoundingClientRect();
+    const inside =
+      ev.clientX >= r.left && ev.clientX <= r.right &&
+      ev.clientY >= r.top  && ev.clientY <= r.bottom;
+    if (!inside) closeZoom();
+  });
+
+  // The browser fires 'close' when ESC is pressed — reset gallery state so
+  // the next open starts fresh.
+  dialog.addEventListener('close', () => {
+    dialog.classList.remove('is-zoomed');
+    imgEl.removeAttribute('src');
+    gallery = [];
+    galleryIndex = 0;
+  });
+
+  // Expose a hook for any future code that appends new .pcard nodes
+  // (e.g. search / filter / pagination) — call to re-scan for badges
+  // and keyboard promotion without rebinding delegated listeners.
+  window.__krishiPreparePimgs = preparePimgs;
+}
+
+initProductZoom();
+
 // Single delegated click handler for both the Add button and the ± controls.
 // Delegated so future cards added dynamically (search, filter, pagination)
 // continue to work without re-binding.
