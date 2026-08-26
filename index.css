@@ -150,7 +150,14 @@ h2.section-title span { color:var(--green); }
   background:linear-gradient(148deg,var(--green-deep) 0%,var(--green-mid) 45%,#1a7a40 72%,var(--teal) 100%);
   display:flex; align-items:flex-start; position:relative; overflow:hidden;
   padding-top:80px;
-  padding-bottom:clamp(2rem, 6vw, 3rem);
+  /* Bottom padding must clear the .wave-sep SVG (position:absolute; bottom:0;
+     60px tall) PLUS breathing room — otherwise the wave is drawn on top of
+     the last hero content (the visual card on mobile) and its bottom edge
+     visually touches / gets clipped by the curve. 5–7rem gives ~20–52px
+     clearance between the card and the top of the wave. The desktop @media
+     block below explicitly resets padding-bottom:0 so this doesn't affect
+     the tall centred hero on ≥769px viewports. */
+  padding-bottom:clamp(5rem, 14vw, 7rem);
 }
 #hero::before {
   content:''; position:absolute;
@@ -291,7 +298,18 @@ h1.hero-h1 .hl {
   background:rgba(255,255,255,.1); backdrop-filter:blur(18px);
   border:1px solid rgba(255,255,255,.18); border-radius:var(--r-xl); padding:1rem;
 }
-.hc-main { background:var(--white); border-radius:var(--r-lg); overflow:hidden; box-shadow:var(--sh-lg); margin-bottom:.9rem; position:relative; min-height:300px; }
+.hc-main {
+  background:var(--white); border-radius:var(--r-lg); overflow:hidden;
+  box-shadow:var(--sh-lg); margin-bottom:.9rem; position:relative;
+  /* Mobile: aspect-ratio matches the sachet source image (1068×840 ≈ 1.27),
+     so `.hc-img-sachet img` with object-fit:contain fills the box edge-to-edge
+     with no white letterboxing above/below. Previously min-height:300px made
+     the box taller than wide (~296×300 on a 360px viewport) which shrank the
+     landscape sachet and left large empty bands top and bottom.
+     The desktop rule (@ ≥769px) restores min-height and switches to
+     object-fit:cover for the rich full-height card layout. */
+  aspect-ratio:1068/840;
+}
 .hc-img  { height:230px; background:linear-gradient(135deg,#e8f5e9,#a5d6a7); display:flex; align-items:center; justify-content:center; font-size:5.5rem; overflow:hidden; }
 .hc-img img { width:100%; height:100%; object-fit:cover; display:block; }
 .hc-body { padding:1.1rem 1.3rem; }
@@ -305,7 +323,40 @@ h1.hero-h1 .hl {
 .hc-price{ color:var(--green); font-weight:900; font-size:1.1rem; }
 .hc-foot { display:flex; justify-content:space-between; align-items:center; font-size:.85rem; padding:0 .25rem; gap:.5rem; }
 .hc-foot span { color:rgba(255,255,255,.95); }
-.hc-foot a    { color:#6ee7a0; font-weight:800; text-decoration:underline; text-underline-offset:3px; }
+/* "View all →" is highlighted as a pill CTA (not just underlined text) so it
+   reads as a tap target rather than a passive link. Works on mobile (over the
+   sachet card background) and gets an on-image override at ≥769px below. */
+.hc-foot a {
+  display:inline-flex; align-items:center; gap:.35rem;
+  padding:.4rem .85rem;
+  font-size:.8rem; font-weight:800; letter-spacing:.01em;
+  color:var(--green-dark);
+  background:linear-gradient(135deg, #eafaf0, #d1f2dc);
+  border:1px solid #b7dfbc;
+  border-radius:999px;
+  text-decoration:none;
+  box-shadow:0 2px 8px rgba(40,167,69,.18);
+  transition:transform var(--ease), box-shadow var(--ease), background var(--ease), color var(--ease);
+  white-space:nowrap;
+}
+.hc-foot a:hover,
+.hc-foot a:focus-visible {
+  background:linear-gradient(135deg, var(--green), var(--teal));
+  color:#fff;
+  border-color:transparent;
+  box-shadow:0 6px 16px rgba(40,167,69,.35);
+  transform:translateY(-1px);
+}
+.hc-foot a:focus-visible {
+  outline:2px solid rgba(255,255,255,.85);
+  outline-offset:2px;
+}
+.hc-foot a:active { transform:translateY(0); box-shadow:0 2px 6px rgba(40,167,69,.28); }
+
+@media (prefers-reduced-motion: reduce) {
+  .hc-foot a { transition:none; }
+  .hc-foot a:hover, .hc-foot a:focus-visible, .hc-foot a:active { transform:none; }
+}
 
 /* Float chips */
 .chip {
@@ -316,7 +367,17 @@ h1.hero-h1 .hl {
 }
 .chip-em { font-size:1.15rem; }
 .chip-sub{ font-size:.7rem; color:var(--muted); font-weight:400; margin-top:.05rem; }
-.chip-2 { top:12px; right:12px; animation:flt 4s 1.5s ease-in-out infinite; }
+/* Mobile: chip hangs OUTSIDE the sachet card's top-right corner (negative
+   top offset) so it never covers the image. The `flt` animation only
+   translates upward (-8px at 50%), so the chip drifts further away from
+   the image, never onto it. Desktop (≥769px) overrides this and places
+   the chip at bottom-left of the tall card, where it also sits outside
+   the sachet artwork thanks to the tall min-height + body overlay. */
+.chip-2 {
+  top:-20px; right:8px;
+  animation:flt 4s 1.5s ease-in-out infinite;
+  z-index:2;
+}
 @keyframes flt { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
 
 /* Particles */
@@ -416,14 +477,45 @@ h1.hero-h1 .hl {
 .pbadge.hot  { background:var(--accent); }
 .pbadge.sea  { background:var(--amber); }
 
-/* Square image — scales with card width (no fixed pixel height) */
+/* Square image — 1:1 on every breakpoint (mobile, tablet, desktop).
+   Product images must be exported as 1200 × 1200 px 1:1 masters with a
+   ≥5%% safe zone (product artwork within an inner 1080 × 1080 area).
+   Combined with object-fit:cover below, the master fills the container
+   edge-to-edge on any card width, so the per-card pastel gradient behind
+   `.pimg` never shows through. See the product-catalog spec discussion in
+   the README / project notes for full photography guidance. */
 .pimg {
   aspect-ratio:1;
   display:flex; align-items:center; justify-content:center;
   font-size:3rem; overflow:hidden;
+  position:relative; /* anchor for the "1/N" gallery-count pill */
   transition:transform var(--ease);
+  /* Standard e-commerce affordance: signal that the image is tappable to
+     zoom. The full zoom dialog is defined further down under `.zoom-dialog`.
+     Keyboard focus is handled by promoting .pimg to a tabbable button in JS. */
+  cursor:zoom-in;
 }
-.pimg img { width:100%; height:100%; object-fit:contain; display:block; }
+.pimg:focus-visible {
+  outline:3px solid rgba(40,167,69,.55);
+  outline-offset:2px;
+}
+.pimg img { width:100%; height:100%; object-fit:cover; display:block; pointer-events:none; }
+
+/* Multi-image indicator — appears only when JS finds data-extra-images
+   > 0 on the parent .pcard. Reads its own text from the data-count attr
+   so no extra DOM node is needed. */
+.pimg[data-count]::after {
+  content:"\1F4F7\FE0E  " attr(data-count); /* camera glyph, text-style */
+  position:absolute;
+  bottom:8px; right:8px;
+  padding:.22rem .55rem;
+  background:rgba(0,0,0,.62);
+  color:#fff;
+  font-size:.68rem; font-weight:800; letter-spacing:.02em;
+  border-radius:999px;
+  pointer-events:none;
+  box-shadow:0 1px 4px rgba(0,0,0,.25);
+}
 
 /* Pastel per-card backgrounds (unchanged) */
 .pcard:nth-child(1)  .pimg { background:linear-gradient(135deg,#fff0f0,#ffdada); }
@@ -456,9 +548,22 @@ h1.hero-h1 .hl {
   text-wrap:balance;
 }
 
-/* Foot: price left, big add button right */
+/* Foot: price left, big add button right.
+   Right-edge alignment across cards (regardless of whether the Add button
+   or the [− N +] counter is showing, and regardless of 3- vs 4-digit
+   prices) is guaranteed by `justify-content: space-between` — both states
+   are pushed against the .pfoot right edge. The only requirement is that
+   the counter's width + price width + gap stays within the card, so the
+   counter is kept genuinely compact (see .qty-inline below). */
 .pfoot  { display:flex; align-items:center; justify-content:space-between; margin-top:auto; gap:.4rem; }
-.pprice { font-size:.95rem; font-weight:900; color:var(--green-dark); line-height:1; white-space:nowrap; }
+.pprice {
+  font-size:.95rem; font-weight:900; color:var(--green-dark); line-height:1;
+  white-space:nowrap;
+  /* No overflow/ellipsis clipping — price must always render in full.
+     If a future extreme edge-case card doesn't fit, tighten the counter
+     or reduce this font-size in a media query rather than truncating. */
+  flex-shrink:0;
+}
 .pprice small { font-size:.65rem; color:var(--muted); font-weight:500; margin-left:1px; display:block; margin-top:2px; }
 
 /* Add button — 44×44 touch target (WCAG 2.5.5 AAA) on mobile */
@@ -479,26 +584,39 @@ h1.hero-h1 .hl {
    reverts back to the Add button when qty drops to zero.
    Both states share the same gradient / rounded look so the swap
    feels like a morph rather than a replacement.
+
+   The counter is deliberately compact (~86px total) so that on a
+   ~160px-wide 2-col phone card even a 4-digit price (₹1,299) plus
+   the .4rem gap plus the counter still fits inside the card body
+   without pushing past the right edge. That's what keeps right
+   edges aligned card-to-card in the products grid.
    ───────────────────────────────────────────────────────────── */
-.qty-slot { display:flex; align-items:center; justify-content:flex-end; flex-shrink:0; }
+.qty-slot {
+  display:flex; align-items:center; justify-content:flex-end;
+  flex-shrink:0;
+  /* No min-width reservation — the .pfoot's space-between already anchors
+     both the Add button and the counter to the right edge, and reserving
+     a wider slot only steals room from the price. */
+}
 .qty-inline {
-  display:inline-flex; align-items:center; gap:.15rem;
-  padding:.22rem;
+  display:inline-flex; align-items:center;
+  gap:.12rem;
+  padding:.2rem;
   border-radius:12px;
   background:linear-gradient(135deg,var(--green),var(--teal));
   box-shadow:0 2px 8px rgba(40,167,69,.28);
-  min-height:44px;                 /* touch-friendly overall height */
+  min-height:40px;                  /* touch-friendly overall height */
   animation:qtyPop .22s cubic-bezier(.4,0,.2,1);
 }
 .qi-btn {
-  min-width:40px; width:40px; height:40px;
-  border:none; border-radius:9px; cursor:pointer;
+  min-width:32px; width:32px; height:36px;
+  border:none; border-radius:8px; cursor:pointer;
   /* Buttons are layered on top of .qty-inline's green→teal gradient — that
      gradient (not this button) is what provides contrast against the white
      glyph, so keep the default background transparent. A translucent wash is
      applied on hover/active for tactile feedback. */
   background:transparent; color:#fff;
-  font-size:1.15rem; font-weight:800; line-height:1;
+  font-size:1.05rem; font-weight:800; line-height:1;
   display:flex; align-items:center; justify-content:center;
   padding:0;
   font-family:inherit;
@@ -512,9 +630,9 @@ h1.hero-h1 .hl {
   outline-offset:2px;
 }
 .qi-num {
-  min-width:1.75rem;
+  min-width:1.2rem;
   padding:0 .1rem;
-  color:#fff; font-size:.95rem; font-weight:800;
+  color:#fff; font-size:.9rem; font-weight:800;
   text-align:center; line-height:1;
   font-variant-numeric:tabular-nums;
   user-select:none;
@@ -528,11 +646,17 @@ h1.hero-h1 .hl {
   .qty-inline { animation:none; }
 }
 
-/* Very narrow phones — trim the counter but keep tap targets above the
-   ~40px comfort threshold. Reducing button width, not height. */
+/* Very narrow phones (~320–380px viewport, cards ≈ 140px wide) — trim
+   both the counter AND the price so the full 4-digit price is always
+   readable and nothing overflows the card. */
 @media (max-width: 380px) {
-  .qi-btn { min-width:36px; width:36px; }
-  .qi-num { min-width:1.5rem; font-size:.9rem; }
+  .pprice   { font-size:.85rem; }
+  .pprice small { font-size:.6rem; }
+  .btn-add  { width:40px; height:40px; }
+  .qi-btn   { min-width:28px; width:28px; height:34px; }
+  .qi-num   { min-width:1.05rem; font-size:.82rem; }
+  .qty-inline { min-height:38px; padding:.16rem; gap:.08rem; }
+  .pfoot    { gap:.3rem; }
 }
 
 /* Desktop-only hover — never fires on touch, prevents sticky :hover on tap */
@@ -954,7 +1078,11 @@ footer { background:var(--dark); color:rgba(255,255,255,.55); }
   .stat-l        { text-align:left; }
   .hero-vis      { margin-top:0; }
   .hero-card-wrap{ padding:1.8rem; }
-  .hc-main       { min-height:380px; }
+  /* Desktop restores the tall rich-card layout: clear the mobile
+     aspect-ratio and use the fixed min-height, so the sachet image
+     (object-fit:cover) fills the full-height card with the body panel
+     overlaying the bottom. */
+  .hc-main       { aspect-ratio:auto; min-height:380px; }
   .hc-img.hc-img-sachet img { object-fit:cover; }
   .hc-img.hc-img-sachet + .hc-body {
     display:block;
@@ -964,8 +1092,31 @@ footer { background:var(--dark); color:rgba(255,255,255,.55); }
   }
   .hc-foot       { font-size:.8rem; padding:0; }
   .hc-foot span  { color:rgba(255,255,255,.7); }
-  .hc-foot a     { font-weight:700; text-decoration:none; }
-  .chip-2        { top:auto; right:auto; bottom:44px; left:-28px; }
+  /* Desktop hero-card foot sits over the white-to-transparent gradient
+     overlay, so restore a light pill that still reads clearly. */
+  .hc-foot a {
+    padding:.42rem .9rem;
+    font-size:.78rem;
+    background:linear-gradient(135deg, #eafaf0, #d1f2dc);
+    color:var(--green-dark);
+    border:1px solid #b7dfbc;
+    box-shadow:0 2px 8px rgba(40,167,69,.22);
+    text-decoration:none;
+  }
+  .hc-foot a:hover,
+  .hc-foot a:focus-visible {
+    background:linear-gradient(135deg, var(--green), var(--teal));
+    color:#fff;
+    border-color:transparent;
+  }
+  /* Desktop: chip hangs BELOW the card as a floating stat badge so it never
+     overlaps the sachet image. Old value (bottom:44px; left:-28px) sat inside
+     the image area — only 28px of the ~140px-wide chip was outside the card,
+     leaving ~110px overlapping the sachet, and the `flt` animation (translateY
+     0 → -8px) slid the chip visibly across it. Now the chip's top edge is
+     ~22px below the card bottom; the -8px float peak leaves it at bottom:-14px
+     — still fully below the image. */
+  .chip-2        { top:auto; right:auto; bottom:-24px; left:2rem; }
 
   /* Features strip */
   .strip-row     { flex-direction:row; }
@@ -992,7 +1143,18 @@ footer { background:var(--dark); color:rgba(255,255,255,.55); }
   /* Product card — restore desktop-rich look */
   .prod-grid     { gap:1.5rem; }
   .pcard         { border-radius:var(--r-lg); }
-  .pimg          { aspect-ratio:auto; height:200px; font-size:4.5rem; }
+  /* Keep the 1:1 square shape on desktop too — with 1200×1200 masters, the
+     image fills the container on every breakpoint (mobile, tablet, desktop)
+     and no pastel gradient shows through. Previous rule forced a 200px
+     landscape (~1.9 W/H) which mismatched the 1:1 sources and revealed the
+     per-card pastel background on either side. `max-width` caps the visual
+     size on wide viewports so a 3-col desktop card doesn't render a huge
+     ~380px-tall image; the 1:1 shape is preserved via `aspect-ratio`. */
+  .pimg          {
+    aspect-ratio:1; height:auto; font-size:4.5rem;
+    width:100%; max-width:260px;
+    margin-left:auto; margin-right:auto;
+  }
   .pbody         { padding:1.15rem 1.25rem 1.3rem; }
   .pname         {
     font-size:1.02rem; line-height:1.3; margin-bottom:.35rem;
@@ -1003,6 +1165,12 @@ footer { background:var(--dark); color:rgba(255,255,255,.55); }
   .pprice small  { font-size:.73rem; }
   .pbadge        { top:12px; left:12px; font-size:.66rem; font-weight:700; padding:.24rem .6rem; border-radius:6px; box-shadow:none; }
   .btn-add       { width:36px; height:36px; border-radius:10px; font-size:.95rem; }
+  /* Desktop cards are much wider (~250–320px), so the counter fits
+     comfortably alongside any price without any special reservation.
+     Slightly slimmer buttons match the smaller 36×36 Add button. */
+  .qi-btn        { min-width:30px; width:30px; height:34px; }
+  .qi-num        { min-width:1.15rem; font-size:.88rem; }
+  .qty-inline    { min-height:38px; padding:.18rem; }
   .pcat          { font-size:.68rem; padding:.2rem .52rem; margin-bottom:.55rem; letter-spacing:.08em; }
   .pdesc         { -webkit-line-clamp:unset; line-clamp:unset; overflow:visible; margin-bottom:.95rem; font-size:.8rem; line-height:1.55; }
 }
@@ -1036,6 +1204,264 @@ footer { background:var(--dark); color:rgba(255,255,255,.55); }
 .wa-ico-md       { font-size: 1.2rem; }
 .cart-title-ico  { margin-right: .45rem; color: var(--green); }
 .is-hidden       { display: none !important; }
+
+/* ─────────────────────────────────────────────────────────────
+   PRODUCT IMAGE ZOOM DIALOG
+   Standard e-commerce lightbox for #products cards.
+   • Uses the native <dialog> element (browser handles focus trap,
+     ESC key, and modal backdrop — zero JS libs, zero CSP relax).
+   • Two zoom states: fit-to-screen (default) and 2× zoom with pan
+     (drag / scroll). JS toggles `.is-zoomed` on the dialog.
+   • Fills the viewport on mobile, becomes a centred sheet on
+     tablet+ so the product remains readable at desk-size.
+   ───────────────────────────────────────────────────────────── */
+.zoom-dialog {
+  padding:0; border:none;
+  background:rgba(15, 30, 20, .96);
+  color:#fff;
+  width:100vw;  max-width:100vw;
+  height:100dvh; max-height:100dvh;
+  overflow:hidden;
+  /* Native <dialog> is display:none by default; showModal() flips it on. */
+}
+.zoom-dialog[open] {
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+}
+.zoom-dialog::backdrop {
+  background:rgba(0, 0, 0, .55);
+  backdrop-filter:blur(3px);
+}
+
+/* Close button — top-right, always visible, generous 44×44 tap target */
+.zoom-close {
+  position:absolute; top:calc(.9rem + env(safe-area-inset-top)); right:.9rem;
+  z-index:2;
+  width:44px; height:44px; border-radius:50%;
+  background:rgba(255,255,255,.14);
+  color:#fff; border:1px solid rgba(255,255,255,.28);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1rem; cursor:pointer;
+  transition:background var(--ease), transform var(--ease);
+  -webkit-tap-highlight-color:transparent;
+}
+.zoom-close:hover,
+.zoom-close:focus-visible {
+  background:rgba(255,255,255,.24);
+  transform:scale(1.05);
+}
+.zoom-close:focus-visible {
+  outline:2px solid rgba(255,255,255,.9);
+  outline-offset:2px;
+}
+
+/* Stage — holds the image; becomes scrollable when zoomed so drag/pinch
+   pans the enlarged image within the modal (browser-native pan).
+   The `safe` keyword on align/justify keeps overflow content anchored
+   at the start when it can't fit — otherwise pure `center` would push
+   the image's top-left outside the scroll origin, making those edges
+   unreachable. `margin:auto` on the image re-centres it when it does
+   fit (fit-to-screen state). */
+.zoom-stage {
+  flex:1 1 auto; min-height:0; width:100%;
+  display:flex; align-items:safe center; justify-content:safe center;
+  overflow:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  padding:1rem;
+  padding-top:calc(1rem + env(safe-area-inset-top) + 3.5rem); /* clear the close btn */
+  padding-bottom:calc(1rem + env(safe-area-inset-bottom));
+  cursor:zoom-in;
+}
+.zoom-stage img {
+  display:block;
+  max-width:100%; max-height:100%;
+  width:auto; height:auto;
+  margin:auto;
+  object-fit:contain;
+  border-radius:var(--r-md);
+  background:#fff;
+  box-shadow:0 10px 40px rgba(0,0,0,.35);
+  user-select:none;
+  -webkit-user-drag:none;
+}
+
+/* Zoomed state — use real width/height (NOT transform:scale) so the
+   browser gives us a real overflow box and can pan in every direction.
+   transform:scale keeps the layout box at fit-size, which prevents the
+   scroll container from ever seeing the extra pixels above/left of
+   centre — that's why left/top were unreachable before. */
+.zoom-dialog.is-zoomed .zoom-stage { cursor:zoom-out; }
+.zoom-dialog.is-zoomed .zoom-stage img {
+  max-width:none; max-height:none;
+  width:200%;
+  height:auto;
+  margin:auto; /* falls back to start-alignment when image > stage */
+}
+
+/* Caption (product name via alt text) — sits below the image on desktop,
+   folds under the close button on very short screens. */
+.zoom-caption {
+  padding:.6rem 1rem;
+  font-size:.9rem; font-weight:700; text-align:center;
+  color:rgba(255,255,255,.9);
+  max-width:min(90vw, 640px);
+  min-height:1em;
+}
+
+/* One-time hint at the bottom (also swapped to "Tap to zoom out" in JS). */
+.zoom-hint {
+  padding:.35rem 1rem calc(.9rem + env(safe-area-inset-bottom));
+  font-size:.78rem; color:rgba(255,255,255,.65);
+  text-align:center;
+  display:inline-flex; align-items:center; gap:.4rem;
+}
+.zoom-hint i { color:#6ee7a0; }
+
+/* Tablet & desktop — sheet-style instead of full-screen. Feels more like
+   a proper lightbox on wide viewports. */
+@media (min-width: 769px) {
+  .zoom-dialog {
+    width:min(880px, 92vw); max-width:92vw;
+    height:auto; max-height:90dvh;
+    border-radius:var(--r-xl);
+    top:50%; left:50%; margin:0;
+    transform:translate(-50%, -50%);
+    box-shadow:0 30px 80px rgba(0,0,0,.5);
+  }
+  .zoom-stage {
+    padding:2.5rem 2rem 1rem;
+  }
+  /* On desktop the stage sits inside a bounded ~880 px sheet — 200 % of
+     that is only ~1600 px, which is still comfortably below the width of
+     a large monitor. Bump to viewport units so zoom always feels like a
+     real 2× enlargement and always overflows the stage in both axes,
+     making every corner reachable via drag/scroll. */
+  .zoom-dialog.is-zoomed .zoom-stage img {
+    width:min(180vw, 180dvh);
+  }
+}
+
+/* Respect motion prefs — no scale/backdrop animation surprises. */
+@media (prefers-reduced-motion: reduce) {
+  .zoom-close { transition:none; }
+  .zoom-dialog::backdrop { backdrop-filter:none; }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Zoom-dialog GALLERY — prev/next arrows, "n/N" counter, and
+   the thumbnail strip. All UI elements auto-hide (via .is-hidden
+   toggled from JS) when the product has a single image, so the
+   simple single-image path stays visually unchanged.
+   ───────────────────────────────────────────────────────────── */
+
+/* Big round nav arrows, vertically centred against the stage. */
+.zoom-nav {
+  position:absolute;
+  top:50%; transform:translateY(-50%);
+  width:44px; height:44px; border-radius:50%;
+  background:rgba(255,255,255,.14);
+  color:#fff; border:1px solid rgba(255,255,255,.28);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1rem; cursor:pointer;
+  transition:background var(--ease), transform .15s ease;
+  -webkit-tap-highlight-color:transparent;
+  z-index:3; /* above stage image and close button's row */
+}
+.zoom-prev { left:calc(.9rem + env(safe-area-inset-left)); }
+.zoom-next { right:calc(.9rem + env(safe-area-inset-right)); }
+.zoom-nav:hover,
+.zoom-nav:focus-visible {
+  background:rgba(255,255,255,.24);
+}
+.zoom-nav:active { transform:translateY(-50%) scale(.94); }
+.zoom-nav:focus-visible {
+  outline:2px solid rgba(255,255,255,.9);
+  outline-offset:2px;
+}
+
+/* Counter pill in the top-left, mirrors the close button styling. */
+.zoom-counter {
+  position:absolute;
+  top:calc(.9rem + env(safe-area-inset-top));
+  left:.9rem;
+  z-index:2;
+  padding:.35rem .75rem;
+  min-width:2.2rem; text-align:center;
+  background:rgba(255,255,255,.14);
+  color:#fff;
+  border:1px solid rgba(255,255,255,.28);
+  border-radius:999px;
+  font-size:.78rem; font-weight:800; letter-spacing:.03em;
+  pointer-events:none;
+}
+
+/* Horizontal thumb strip below the caption. Uses overflow-x:auto so it
+   stays a single row on every viewport; the active thumb is scroll-
+   snapped into view from JS. */
+.zoom-thumbs {
+  display:flex; gap:.5rem;
+  padding:.4rem 1rem calc(.4rem + env(safe-area-inset-bottom));
+  overflow-x:auto; overflow-y:hidden;
+  overscroll-behavior:contain;
+  scrollbar-width:none;             /* Firefox */
+  -ms-overflow-style:none;          /* legacy Edge */
+  max-width:100vw;
+  scroll-snap-type:x proximity;
+}
+.zoom-thumbs::-webkit-scrollbar { display:none; }
+
+.zoom-thumb {
+  flex:0 0 auto;
+  width:56px; height:56px;
+  padding:0;
+  border-radius:8px;
+  border:2px solid rgba(255,255,255,.28);
+  background:rgba(255,255,255,.06);
+  cursor:pointer;
+  overflow:hidden;
+  transition:border-color var(--ease), transform .15s ease, opacity var(--ease);
+  scroll-snap-align:center;
+  opacity:.72;
+  -webkit-tap-highlight-color:transparent;
+}
+.zoom-thumb img {
+  width:100%; height:100%;
+  object-fit:cover;
+  display:block;
+  pointer-events:none;
+}
+.zoom-thumb:hover,
+.zoom-thumb:focus-visible { opacity:1; }
+.zoom-thumb:focus-visible {
+  outline:2px solid rgba(255,255,255,.9);
+  outline-offset:2px;
+}
+.zoom-thumb.is-active {
+  border-color:#6ee7a0;
+  opacity:1;
+  transform:scale(1.04);
+}
+
+/* Desktop: sheet-style dialog — reposition arrows/counter to sit inside
+   the sheet frame instead of at viewport edges. */
+@media (min-width: 769px) {
+  .zoom-prev { left:.6rem; }
+  .zoom-next { right:.6rem; }
+  .zoom-counter { top:.9rem; left:1rem; }
+  .zoom-thumbs { padding:.6rem 1.25rem 1rem; }
+  .zoom-thumb  { width:64px; height:64px; }
+}
+
+/* Very narrow phones — shrink arrows so they don't crowd the image. */
+@media (max-width: 380px) {
+  .zoom-nav { width:38px; height:38px; font-size:.9rem; }
+  .zoom-thumb { width:48px; height:48px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zoom-nav, .zoom-thumb { transition:none; }
+}
 
 /* ─────────────────────────────────────────────────────────────
    Legal pages — Privacy Policy (#privacy) and Terms of Service
@@ -1222,8 +1648,50 @@ footer { background:var(--dark); color:rgba(255,255,255,.55); }
   cursor: not-allowed; box-shadow: none; transform: none;
 }
 
-/* Mobile drawer ergonomics: keep list readable and move to delivery step only on confirmation. */
-@media (max-width: 768px) {
+/* ─────────────────────────────────────────────────────────────
+   Delivery-step scrolling — applies to ALL devices (phones,
+   tablets, desktops with narrow windows). Previously scoped only
+   to max-width: 768px, which left tablets (iPad portrait 810px,
+   landscape 1024–1180px, Android tablets) with the delivery form
+   trapped underneath the on-screen keyboard because .cart-foot
+   was allowed to grow past the shrunken drawer height without
+   any scroll container. Lifting these rules out of the phone
+   breakpoint makes the delivery panel keyboard-aware everywhere.
+   ───────────────────────────────────────────────────────────── */
+
+/* In delivery step, let the form use the full remaining drawer height
+   and scroll internally so the keyboard never covers the focused field. */
+.cart-drawer.delivery-step .cart-foot {
+  flex:1 1 auto;
+  min-height:0;
+  max-height:none;
+  overflow:hidden;
+  grid-template-rows:auto minmax(0,1fr);
+}
+
+.cart-drawer.delivery-step .checkout-steps {
+  background:var(--white);
+  padding-bottom:.4rem;
+  margin-bottom:.35rem;
+}
+
+.cart-drawer.delivery-step #cartDeliveryPanel {
+  min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+  /* --kb-h is populated by JS with the on-screen keyboard's overlap height
+     (window.innerHeight − visualViewport.height). Reserving that much extra
+     bottom padding lets the user scroll the focused field ABOVE the
+     keyboard instead of it being trapped underneath. Works on phones,
+     tablets, and detachable-keyboard 2-in-1s alike. */
+  padding-bottom:calc(.35rem + env(safe-area-inset-bottom) + var(--kb-h, 0px));
+  scroll-padding-bottom:calc(1rem + var(--kb-h, 0px));
+}
+
+/* Mobile & tablet drawer ergonomics: full-width sheet, compact padding,
+   cap the pre-delivery cart-foot height so the items list stays visible. */
+@media (max-width: 1024px) {
   .cart-drawer {
     width:100vw;
     max-width:100vw;
@@ -1243,34 +1711,11 @@ footer { background:var(--dark); color:rgba(255,255,255,.55); }
     padding-bottom:calc(1rem + env(safe-area-inset-bottom));
     gap:.7rem;
   }
+}
 
-  /* In delivery step, let the form use the full remaining drawer height. */
-  .cart-drawer.delivery-step .cart-foot {
-    flex:1 1 auto;
-    min-height:0;
-    max-height:none;
-    overflow:hidden;
-    grid-template-rows:auto minmax(0,1fr);
-  }
-
-  .cart-drawer.delivery-step .checkout-steps {
-    background:var(--white);
-    padding-bottom:.4rem;
-    margin-bottom:.35rem;
-  }
-
-  .cart-drawer.delivery-step #cartDeliveryPanel {
-    min-height:0;
-    overflow-y:auto;
-    overscroll-behavior:contain;
-    /* --kb-h is populated by JS with the on-screen keyboard's overlap height
-       (window.innerHeight − visualViewport.height). Reserving that much extra
-       bottom padding lets the user scroll the focused field ABOVE the
-       keyboard instead of it being trapped underneath. */
-    padding-bottom:calc(.35rem + env(safe-area-inset-bottom) + var(--kb-h, 0px));
-    scroll-padding-bottom:calc(1rem + var(--kb-h, 0px));
-  }
-
+/* Phone-only: collapse the delivery form to a single column. Tablets keep
+   the two-column layout because they have room for it. */
+@media (max-width: 768px) {
   .deliv-fields {
     grid-template-columns:1fr;
     gap:.52rem;

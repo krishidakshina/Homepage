@@ -107,18 +107,6 @@
           Wholesome Harvests,<br>
           <span class="hl">Full of Goodness,<br>Straight from the Farm</span>
         </h1>
-                <p class="hero-sub">
-          SSHHH!!! Your Health, Your Secret.
-          We're quietly growing, one harvest at a time.
-          Join us early and discover freshness before everyone else.
-        </p>
-        <p class="hero-sub">
-          From sun-kissed produce to pantry staples — KrishiDakshina delivers
-          farm-fresh quality to your kitchen.
-
-          Your Trusted Partner for Harvest Produce.
-          <a href="#contact" class="hero-contact-link">Contact Us</a>.
-        </p>
         <p class="hero-sub hero-sub--export">
           <i class="fa-solid fa-earth-asia" aria-hidden="true"></i>
           <span><strong>Export of farm products</strong> &mdash; bulk &amp; international enquiries welcome.</span>
@@ -132,6 +120,18 @@
             <i class="fa-solid fa-earth-asia" aria-hidden="true"></i> Export Enquiry
           </a>
         </div>
+        <p class="hero-sub">
+          SSHHH!!! Your Health, Your Secret.
+          We're quietly growing, one harvest at a time.
+          Join us early and discover freshness before everyone else.
+        </p>
+        <p class="hero-sub">
+          From sun-kissed produce to pantry staples — KrishiDakshina delivers
+          farm-fresh quality to your kitchen.
+
+          Your Trusted Partner for Harvest Produce.
+          <a href="#contact" class="hero-contact-link">Contact Us</a>.
+        </p>
         <div class="hero-stats">
           <div><div class="stat-n">10+</div><div class="stat-l">Products</div></div>
           <div><div class="stat-n">1K+</div><div class="stat-l">Customers</div></div>
@@ -149,7 +149,6 @@
             <div class="hc-body">
               <span class="hc-cat">🌿 Nature's Intelligence</span>
               <div class="hc-name">Harvest Nutri Sachet</div>
-              <div class="hc-price">₹299</div>
             </div>
           </div>
           <div class="hc-foot">
@@ -265,12 +264,19 @@
     ║     product_images/P5.jpg           → Card 5 (Harvest Nutri)     ║
     ║     product_images/P6.jpg           → Card 6 (Jaggery Powder)    ║
     ║                                                                  ║
+    ║  MULTIPLE IMAGES PER PRODUCT                                     ║
+    ║  ───────────────────────────                                     ║
+    ║  Set `data-extra-images="N"` on a <article class="pcard"> to     ║
+    ║  advertise N extra product photos. The zoom dialog will then     ║
+    ║  fetch product_images/P{n}_1.jpg, P{n}_2.jpg … P{n}_N.jpg        ║
+    ║  alongside the main P{n}.jpg. Cards without the attribute (or    ║
+    ║  with the value "0") stay single-image and the gallery UI hides. ║
     ╚══════════════════════════════════════════════════════════════════╝
     -->
     <div class="prod-grid">
 
       <!-- ── Card 1 ── src="product_images/P1.jpg" | Cold-Pressed Groundnut Oil -->
-      <article class="pcard fi">
+      <article class="pcard fi" data-extra-images="1">
         <span class="pbadge org">Cold-Pressed</span>
         <div class="pimg">
           <img src="product_images/P1.jpg" alt="Cold-Pressed Groundnut Oil" data-fallback="🥜">
@@ -948,6 +954,48 @@
 <button id="top-btn" aria-label="Back to top">
   <i class="fa-solid fa-chevron-up"></i>
 </button>
+
+<!-- ══════════════════════════════════
+     PRODUCT IMAGE ZOOM DIALOG
+     Standard e-commerce lightbox: tap any product image → opens
+     fit-to-screen; tap the enlarged image once more → toggles 2×
+     zoom with pan; ESC / backdrop / ✕ button closes.
+     Populated at open-time from the clicked <img>'s src + alt so
+     one dialog serves every product card. Native <dialog> handles
+     focus trap, backdrop, and ESC for free.
+════════════════════════════════════ -->
+<dialog id="zoomDialog" class="zoom-dialog" aria-labelledby="zoomDialogTitle">
+  <button type="button" class="zoom-close" id="zoomClose" aria-label="Close image">
+    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+  </button>
+
+  <!-- Previous / next arrows appear only when the product has more than
+       one image (JS toggles .is-hidden on them). Kept outside the stage
+       so they float over any zoom state and don't affect scroll geometry. -->
+  <button type="button" class="zoom-nav zoom-prev is-hidden" id="zoomPrev" aria-label="Previous image">
+    <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+  </button>
+  <button type="button" class="zoom-nav zoom-next is-hidden" id="zoomNext" aria-label="Next image">
+    <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+  </button>
+
+  <!-- "2 / 4" pill, top-left corner. Hidden for single-image products. -->
+  <div class="zoom-counter is-hidden" id="zoomCounter" aria-live="polite"></div>
+
+  <div class="zoom-stage" id="zoomStage">
+    <img id="zoomImage" alt="" decoding="async">
+  </div>
+  <p id="zoomDialogTitle" class="zoom-caption" aria-live="polite"></p>
+
+  <!-- Thumbnail strip. JS populates one .zoom-thumb per gallery image.
+       Hidden entirely when the product has a single image. -->
+  <div class="zoom-thumbs is-hidden" id="zoomThumbs" role="tablist" aria-label="Product images"></div>
+
+  <p class="zoom-hint" aria-hidden="true">
+    <i class="fa-solid fa-magnifying-glass-plus"></i>
+    Tap image to zoom
+  </p>
+</dialog>
 
 <script src="index.js" defer></script>
 </body>
